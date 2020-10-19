@@ -1,0 +1,37 @@
+@import "../../constants/colors"; /* color variables */
+
+/* SIDENAV MENU */
+.sidenav---sidenav---_2tBP {
+  position: fixed !important;
+}
+
+.sidenav---expanded---1KdUL .sidenav---navtext---1AE_f {
+  color: white !important;
+}
+
+.sidenav---navtext---1AE_f {
+  color: white !important;
+}
+
+.icon {
+  font-size: 1.75em;
+  vertical-align: middle;
+}
+
+nav {
+  background-color: $primary !important;
+}
+
+.side-nav {
+  overflow-y: scroll;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.side-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE and Edge */
+.side-nav {
+  -ms-overflow-style: none;
+}

@@ -1,0 +1,33 @@
+@import "../../constants/colors";
+
+.imagePicker-container {
+  overflow-x: scroll;
+  overflow-y: scroll;
+}
+
+.imagePicker-icon {
+  display: inline-block;
+  transition: .5s ease;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: $primary;
+}
+
+.imagePicker-selected {
+  border-style: solid $primary;
+}
+
+.content {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin-top: 5px;
+}
+
+.image {
+  object-fit: contain;
+  width: 150px;
+  height: 150px;
+  background: $light-gray;
+}

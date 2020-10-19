@@ -1,0 +1,34 @@
+// TABLE
+@media (max-width: 1200px) {
+  .table-container {
+    overflow-x: auto;
+    white-space: nowrap;
+
+    .table-child {
+      display: inline-block;
+      width: 1200px;
+    }
+  }
+}
+
+.table td, .table th {
+  word-wrap: break-word;
+  padding: 0.5rem 0.6rem !important;
+}
+
+// Table date filter
+.date-filter {
+  justify-content: center !important;
+}
+
+.date-filter-comparator, .number-filter-comparator {
+  width: 46px !important;
+}
+
+.date-filter-input, .number-filter-input {
+  width: 100% !important;
+}
+
+ul {
+  padding-left: 10px;
+}
