@@ -26,6 +26,7 @@ import {
   VIRTUALCARD_PAGE,
   SUBJECTS_PAGE,
   TEACHERS_PAGE,
+  STUDENTS_PAGE
 } from "./constants/routes";
 
 import { auth } from "./services/firebase/config";
@@ -47,6 +48,7 @@ import RefundsPage from "./pages/Refunds/RefundsPage";
 ///////////////////
 import SubjectsPage from "./pages/Subjects/SubjectsPage";
 import TeachersPage from "./pages/Teachers/TeachersPage";
+import StudentsPage from "./pages/Students/StudentsPage";
 
 export const AuthContext = React.createContext(null);
 
@@ -91,6 +93,7 @@ export default () => {
             <Route path={COMMENTS_PAGE} exact component={CommentsPage} />
             <Route path={SUBJECTS_PAGE} exact component={SubjectsPage} />
             <Route path={TEACHERS_PAGE} exact component={TeachersPage} />
+            <Route path={STUDENTS_PAGE} exact component={StudentsPage} />
 
             <Route
               path={AUTHENTICATION_SERVICES}

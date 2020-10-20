@@ -19,6 +19,7 @@ import {
   VIRTUALCARD_PAGE,
   SUBJECTS_PAGE,
   TEACHERS_PAGE,
+  STUDENTS_PAGE,
 } from "../../constants/routes";
 import LogOutModal from "../LogOutModal";
 
@@ -68,11 +69,11 @@ const SideBarMenu = ({ history, onToggle }) => {
             </NavIcon>
             <NavText>Profesores</NavText>
           </NavItem>
-          <NavItem eventKey={VIRTUALCARD_PAGE.substring(1)}>
+          <NavItem eventKey={STUDENTS_PAGE.substring(1)}>
             <NavIcon>
               <FontAwesomeIcon icon={faUserGraduate} className="icon" />
             </NavIcon>
-            <NavText>Alumnos</NavText>
+            <NavText>Estudiantes</NavText>
           </NavItem>
           <NavItem eventKey={PRODUCTS_PAGE.substring(1)}>
             <NavIcon>
