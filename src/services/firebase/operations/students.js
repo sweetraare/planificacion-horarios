@@ -10,7 +10,7 @@ export const removeAllStudents = (plan) => {
   return StudentsRef.remove();
 };
 
-export const editTeacherProperty = (plan, slug, property, value) => {
+export const editStudentProperty = (plan, slug, property, value) => {
   const StudentsRef = db.ref(`${plan}/students`);
   return StudentsRef.child(slug).child(property).update(value);
 };

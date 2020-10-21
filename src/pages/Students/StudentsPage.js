@@ -16,20 +16,23 @@ import {
   faPlus,
   faTrashAlt,
   faObjectGroup,
+  faObjectUngroup,
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from "../../components/DataTable";
 import { textFilter } from "react-bootstrap-table2-filter";
 import StudentsFormModal from "./components/StudentsFormModal";
-import {
-  getSubjects,
-  listenSubjects,
-} from "../../services/firebase/operations/subjects";
+import StudentsExcelModal from "./components/StudentsExcelModal";
+import StudentsGroupsModal from "./components/StudentsGroupsModal";
+import StudentsSubGroupsModal from "./components/StudentsSubGroupsModal";
+
 export default () => {
   const { plan } = useContext(AuthContext);
 
   const [data, setData] = useState([]);
   const [showFormModal, setShowFormModal] = useState(false);
   const [showExcelModal, setShowExcelModal] = useState(false);
+  const [showGroupsModal, setGroupsModal] = useState(false);
+  const [showSubGroupsModal, setSubGroupsModal] = useState(false);
   const [action, setAction] = useState("");
   const [selectedStudent, setSelectedStudent] = useState({});
 
@@ -68,8 +71,29 @@ export default () => {
     setShowFormModal(true);
   };
 
+  const handleSubgroups = (student) => {
+    setSelectedStudent(student);
+    setSubGroupsModal(true);
+  };
+
+  const handleGroups = (student) => {
+    setSelectedStudent(student);
+    setGroupsModal(true);
+  };
+
+  const handleCancelGroup = () => {
+    setGroupsModal(false);
+    setSelectedStudent({});
+  };
+
+  const handleCancelSubGroup = () => {
+    setSelectedStudent({});
+    setSubGroupsModal(false);
+  };
+
   const handleCancel = () => {
     setShowFormModal(false);
+    setSelectedStudent({});
   };
 
   const handleCancelExcel = () => {
@@ -134,6 +158,7 @@ export default () => {
                   },
                   {
                     text: "Número de estudiantes ",
+                    dataField: "NumberOfStudents",
                     headerStyle: {
                       width: "15%",
                       textAlign: "center",
@@ -158,10 +183,19 @@ export default () => {
                           <Button
                             variant="outline-secondary"
                             className="btn-sm"
-                            onClick={() => handleEdit(row)}
+                            onClick={() => handleGroups(row)}
                           >
                             <FontAwesomeIcon icon={faObjectGroup} />
                             &nbsp; Grupos
+                          </Button>
+                          &nbsp;
+                          <Button
+                            variant="outline-secondary"
+                            className="btn-sm"
+                            onClick={() => handleSubgroups(row)}
+                          >
+                            <FontAwesomeIcon icon={faObjectUngroup} />
+                            &nbsp; Subgrupos
                           </Button>
                           &nbsp;
                           <Button
@@ -203,6 +237,20 @@ export default () => {
         show={showFormModal}
         handleClose={handleCancel}
         action={action}
+        student={selectedStudent}
+      />
+      <StudentsExcelModal
+        show={showExcelModal}
+        handleClose={handleCancelExcel}
+      />
+      <StudentsGroupsModal
+        show={showGroupsModal}
+        handleClose={handleCancelGroup}
+        student={selectedStudent}
+      />
+      <StudentsSubGroupsModal
+        show={showSubGroupsModal}
+        handleClose={handleCancelSubGroup}
         student={selectedStudent}
       />
     </AdminLayout>
