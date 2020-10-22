@@ -19,3 +19,4 @@ export const REFUNDS_PAGE = "/refunds";
 export const SUBJECTS_PAGE = "/materias";
 export const TEACHERS_PAGE = "/profesores";
 export const STUDENTS_PAGE = "/estudiantes";
+export const SPACES_PAGE = "/espacios";
