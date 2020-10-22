@@ -86,7 +86,7 @@ const SideBarMenu = ({ history, onToggle }) => {
             <NavIcon>
               <FontAwesomeIcon icon={faTags} className="icon" />
             </NavIcon>
-            <NavText>Codigos</NavText>
+            <NavText>Códigos</NavText>
           </NavItem>
           <NavItem eventKey={CONFIG_PAGE.substring(1)}>
             <NavIcon>
