@@ -10,6 +10,7 @@ import {
   faSchool,
   faUserGraduate,
   faTags,
+  faPaperclip,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -21,6 +22,7 @@ import {
   SPACES_PAGE,
   STUDENTS_PAGE,
   TAGS_PAGE,
+  ACTIVITIES_PAGE,
 } from "../../constants/routes";
 import LogOutModal from "../LogOutModal";
 
@@ -57,6 +59,12 @@ const SideBarMenu = ({ history, onToggle }) => {
               <FontAwesomeIcon icon={faHome} className="icon" />
             </NavIcon>
             <NavText>Inicio</NavText>
+          </NavItem>
+          <NavItem eventKey={ACTIVITIES_PAGE.substring(1)}>
+            <NavIcon>
+              <FontAwesomeIcon icon={faPaperclip} className="icon" />
+            </NavIcon>
+            <NavText>Actividades</NavText>
           </NavItem>
           <NavItem eventKey={SUBJECTS_PAGE.substring(1)}>
             <NavIcon>

@@ -61,7 +61,7 @@ export default () => {
 
   return (
     <AdminLayout>
-      <h1>Bienvenido al sistema!</h1>
+      <h1>Bienvenido al sistema</h1>
 
       <div className="plan-container">
         <div>
