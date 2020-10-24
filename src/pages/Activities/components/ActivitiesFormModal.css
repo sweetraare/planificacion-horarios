@@ -1,0 +1,27 @@
+.select-container {
+  height: 30vh;
+  overflow-y: scroll;
+  padding: 5px;
+  padding-top: 0px;
+  margin-bottom: 10px;
+}
+
+.select-title {
+  position: sticky;
+  top: 0;
+  left: 0;
+  margin-bottom: 20px;
+  border-bottom: 2px gray solid;
+  background: white;
+  padding-bottom: 5px;
+
+}
+.item-name {
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 10px;
+}
+
+.item-name:nth-child(2n) {
+    background-color: rgba(168, 168, 168, 0.29);
+}

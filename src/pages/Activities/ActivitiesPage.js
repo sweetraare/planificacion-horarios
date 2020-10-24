@@ -15,7 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from "../../components/DataTable";
 import { textFilter } from "react-bootstrap-table2-filter";
-import TagsFormModal from "./components/TagsFormModal";
+import ActivitiesFormModal from "./components/ActivitiesFormModal";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -163,7 +163,7 @@ export default () => {
           Necesitas seleccionar un plan en la pantalla principal para continuar.
         </h1>
       )}
-      <TagsFormModal
+      <ActivitiesFormModal
         show={showFormModal}
         handleClose={handleCancel}
         action={action}
