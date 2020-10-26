@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Button, Modal, Form, Row, Col } from "react-bootstrap";
+import { Button, Modal, Form, Row, Col, Table } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
 import { addActivity } from "../../../services/firebase/operations/activities";
@@ -36,6 +36,11 @@ export default ({ show, handleClose, action, tag }) => {
   const [searchStudent, setSearchStudent] = useState("");
   const [searchTag, setSearchTag] = useState("");
   const [searchSubject, setSearchSubject] = useState("");
+
+  const [weight, setWeight] = useState(95);
+  const [minDays, setMinDays] = useState(1);
+  const [consecutive, setConsecutive] = useState(true);
+  const [splitList, setSplitList] = useState([]);
 
   const [split, setSplit] = useState(1);
   //use effect to charge all lists
@@ -176,6 +181,42 @@ export default ({ show, handleClose, action, tag }) => {
 
   const handleSelect = (set, value) => {
     set(value);
+  };
+
+  const createTableHeader = () => {
+    const response = [];
+
+    for (let i = 0; i < minDays; i++) {
+      response.push(<th className="table-column">{i + 1}</th>);
+    }
+    return response;
+  };
+
+  const createTableBody = () => {
+    const response = [];
+
+    for (let i = 0; i < minDays; i++) {
+      response.push(
+        <td>
+          <Form.Control
+            className="table-column"
+            name="title_en"
+            type="number"
+            value={splitList[i] ? splitList[i] : ""}
+            onChange={(event) => handleChangeSplit(event.target.value, i)}
+          />
+        </td>
+      );
+    }
+    return response;
+  };
+
+  const handleChangeSplit = (value, index) => {
+    const splitListCopy = [...splitList];
+
+    splitListCopy[index] = +value;
+
+    setSplitList(splitListCopy);
   };
 
   return (
@@ -337,6 +378,70 @@ export default ({ show, handleClose, action, tag }) => {
               />
             </Col>
           </Form.Group>
+          <Row>
+            <Col xs={6}>
+              <Table bordered responsive>
+                <thead>
+                  <tr>
+                    <th>Disivión</th>
+                    {createTableHeader()}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {" "}
+                    <th>Duración</th>
+                    {createTableBody()}
+                  </tr>
+                </tbody>
+              </Table>
+            </Col>
+            <Col xs={6}>
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Min días:
+                </Form.Label>
+                <Col sm={8}>
+                  <Form.Control
+                    name="divide"
+                    type="number"
+                    min={1}
+                    max={35}
+                    value={minDays}
+                    onChange={(e) => setMinDays(+e.target.value)}
+                  />
+                </Col>
+              </Form.Group>
+              {minDays > 1 && (
+                <>
+                  <Form.Group as={Row}>
+                    <Form.Label column sm={4}>
+                      Peso:
+                    </Form.Label>
+                    <Col sm={8}>
+                      <Form.Control
+                        name="divide"
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={weight}
+                        onChange={(e) => setWeight(+e.target.value)}
+                      />
+                    </Col>
+                  </Form.Group>
+                  <Form.Group>
+                    <Form.Check
+                      type="checkbox"
+                      label="Consecutiva"
+                      value={consecutive}
+                      checked={consecutive}
+                      onClick={() => setConsecutive(!consecutive)}
+                    />
+                  </Form.Group>
+                </>
+              )}
+            </Col>
+          </Row>
         </div>
       </Modal.Body>
       <Modal.Footer>
