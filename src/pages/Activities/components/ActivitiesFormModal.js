@@ -2,19 +2,26 @@ import React, { useContext, useEffect, useState } from "react";
 import { Button, Modal, Form, Row, Col, Table } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
-import { addActivity } from "../../../services/firebase/operations/activities";
+import {
+  addActivity,
+  getActivities,
+} from "../../../services/firebase/operations/activities";
+import { addTimeConstraint } from "../../../services/firebase/operations/timeConstraints";
 import { getTeachers } from "../../../services/firebase/operations/teachers";
 import { getStudents } from "../../../services/firebase/operations/students";
 import { getSubjects } from "../../../services/firebase/operations/subjects";
 import { getTags } from "../../../services/firebase/operations/tags";
 import { AuthContext } from "../../../App";
 import toArray from "lodash/toArray";
+import isEmpty from "lodash/isEmpty";
 
 import "./ActivitiesFormModal.css";
 
 export default ({ show, handleClose, action, tag }) => {
   const { plan } = useContext(AuthContext);
-  const [Name, setName] = useState("");
+
+  const [activities, setActivities] = useState([]);
+
   const [Comments, setComments] = useState("");
   const [Teachers, setTeachers] = useState([]);
   const [Students, setStudents] = useState([]);
@@ -41,6 +48,7 @@ export default ({ show, handleClose, action, tag }) => {
   const [minDays, setMinDays] = useState(1);
   const [consecutive, setConsecutive] = useState(true);
   const [splitList, setSplitList] = useState([]);
+  const [maxID, setMaxID] = useState(0);
 
   const [split, setSplit] = useState(1);
   //use effect to charge all lists
@@ -50,12 +58,14 @@ export default ({ show, handleClose, action, tag }) => {
         const teachersFetched = await getTeachers(plan ? plan : " ");
         const studentsFetched = await getStudents(plan ? plan : " ");
         const subjectsFetched = await getSubjects(plan ? plan : " ");
+        const activitiesFetched = await getActivities(plan ? plan : " ");
         const tagsFetched = await getTags(plan ? plan : " ");
         return {
           teachersFetched,
           studentsFetched,
           subjectsFetched,
           tagsFetched,
+          activitiesFetched,
         };
       } catch (error) {
         return error;
@@ -69,7 +79,12 @@ export default ({ show, handleClose, action, tag }) => {
           studentsFetched,
           subjectsFetched,
           tagsFetched,
+          activitiesFetched,
         } = data;
+
+        if (activitiesFetched.exists()) {
+          setActivities(toArray(activitiesFetched.val()));
+        }
 
         if (teachersFetched.exists()) {
           setTeachers(toArray(teachersFetched.val()));
@@ -91,46 +106,102 @@ export default ({ show, handleClose, action, tag }) => {
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const slug = action === "ADD" ? generateUniqueKey() : tag.slug;
-      await addActivity(plan ? plan : " ", slug, {
-        Name,
-        Comments,
-        slug,
-      });
-      newSuccessToast("Código agregado con éxito");
-      setName("");
-      setComments("");
-      action === "EDIT" && handleClose();
-    } catch (error) {
-      newErrorToast(`ERROR: ${error.message}`);
-      console.log(error);
-    }
+  useEffect(() => {
+    const maxIDObject = activities.reduce(
+      (a, b) => (a ? (a.id > b.id ? a : b) : b),
+      null
+    );
+    setMaxID(maxIDObject ? maxIDObject.id : 0);
+  }, [activities]);
+
+  const clearVariables = () => {
+    setVisibleTeachers(Teachers);
+    setVisibleStudents(Students);
+    setVisibleSubjects(Subjects);
+    setVisibleTags(Tags);
+    setTeacher({});
+    setStudent({});
+    setTag({});
+    setSubject({});
+    setSearchTeacher("");
+    setSearchStudent("");
+    setSearchTag("");
+    setSearchSubject("");
+    setWeight(95);
+    setMinDays(1);
+    setConsecutive(true);
+    setSplitList([]);
+    setMaxID(0);
+    setSplit(1);
   };
 
-  useEffect(() => {
-    setVisibleSubjects(
-      Subjects.filter((subject) => subject.Name.includes(searchSubject))
-    );
-  }, [searchSubject]);
+  const handleSave = async () => {
+    try {
+      if (
+        isEmpty(Teacher) ||
+        isEmpty(Subject) ||
+        isEmpty(Tag) ||
+        isEmpty(Student)
+      ) {
+        newErrorToast(`Uno de los campos no se ha seleccionado`);
+        return;
+      }
+      const newActivity = {
+        slug: generateUniqueKey(),
+        Teacher: Teacher.slug,
+        Subject: Subject.slug,
+        Tag: Tag.slug,
+        Students: Student.slug,
+        Active: true,
+        id: maxID + 1,
+      };
+      if (split === 1) {
+        if (!splitList[0]) {
+          newErrorToast(`Duración no definida`);
+        } else {
+          newActivity.ActivityGroup = 0;
+          newActivity.Duration = splitList[0];
+          newActivity.TotalDuration = splitList[0];
+          await addActivity(plan ? plan : " ", newActivity.slug, newActivity);
+        }
+      } else {
+        const newTimeContraint = `<Weight_Percentage>${+weight}</Weight_Percentage>
+	<Consecutive_If_Same_Day>${consecutive}</Consecutive_If_Same_Day>
+	<Number_of_Activities>${splitList.length}</Number_of_Activities>
+  ${splitList.map((s, i) => `<Activity_Id>${maxID + i + 1}</Activity_Id>`)}
+	<MinDays>${minDays}</MinDays>
+	<Active>true</Active>
+	<Comments></Comments>`;
+        console.log(newTimeContraint);
+        if (splitList.every((s) => +s)) {
+          const totalDuration = splitList.reduce((acc, s) => acc + s);
+          splitList.forEach(async (s, index) => {
+            const newActivity = {
+              slug: generateUniqueKey(),
+              Teacher: Teacher.slug,
+              Subject: Subject.slug,
+              Tag: Tag.slug,
+              Students: Student.slug,
+              Active: true,
+              Duration: s,
+              TotalDuration: totalDuration,
+              id: maxID + index + 1,
+              ActivityGroup: maxID + 1,
+            };
 
-  useEffect(() => {
-    setVisibleTags(Tags.filter((tag) => tag.Name.includes(searchTag)));
-  }, [searchTag]);
+            await addActivity(plan ? plan : " ", newActivity.slug, newActivity);
+          });
 
-  useEffect(() => {
-    setVisibleStudents(
-      Students.filter((student) => student.Name.includes(searchStudent))
-    );
-  }, [searchStudent]);
-
-  useEffect(() => {
-    setVisibleTeachers(
-      Teachers.filter((teacher) => teacher.Name.includes(searchTeacher))
-    );
-  }, [searchTeacher]);
+          await addTimeConstraint(plan ? plan : " ", newTimeContraint);
+          newSuccessToast(`Actividad ingresada exitosamente`);
+        } else {
+          newErrorToast(`Alguna duración no está definida`);
+        }
+      }
+    } catch (error) {
+      newErrorToast(`ERROR: ${error.message}`);
+    }
+  };
 
   useEffect(() => {
     switch (studentsType) {
@@ -186,7 +257,7 @@ export default ({ show, handleClose, action, tag }) => {
   const createTableHeader = () => {
     const response = [];
 
-    for (let i = 0; i < minDays; i++) {
+    for (let i = 0; i < split; i++) {
       response.push(<th className="table-column">{i + 1}</th>);
     }
     return response;
@@ -195,7 +266,7 @@ export default ({ show, handleClose, action, tag }) => {
   const createTableBody = () => {
     const response = [];
 
-    for (let i = 0; i < minDays; i++) {
+    for (let i = 0; i < split; i++) {
       response.push(
         <td>
           <Form.Control
@@ -412,7 +483,7 @@ export default ({ show, handleClose, action, tag }) => {
                   />
                 </Col>
               </Form.Group>
-              {minDays > 1 && (
+              {split > 1 && (
                 <>
                   <Form.Group as={Row}>
                     <Form.Label column sm={4}>
@@ -445,7 +516,7 @@ export default ({ show, handleClose, action, tag }) => {
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button type="submit" variant="primary">
+        <Button onClick={handleSave} variant="primary">
           Guardar
         </Button>
         <Button variant="secondary" className="ml-3" onClick={handleClose}>

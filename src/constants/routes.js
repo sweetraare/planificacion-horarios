@@ -13,3 +13,4 @@ export const STUDENTS_PAGE = "/estudiantes";
 export const SPACES_PAGE = "/espacios";
 export const TAGS_PAGE = "/codigos";
 export const ACTIVITIES_PAGE = "/actividades";
+export const TIMETABLE_PAGE = "/horario";
