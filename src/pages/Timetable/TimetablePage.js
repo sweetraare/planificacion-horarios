@@ -13,6 +13,13 @@ import { getTags } from "../../services/firebase/operations/tags";
 import { getStudents } from "../../services/firebase/operations/students";
 import { getActivities } from "../../services/firebase/operations/activities";
 import { getSpaces } from "../../services/firebase/operations/spaces";
+import { getDaysList } from "../../services/firebase/operations/daysList";
+import { getHoursList } from "../../services/firebase/operations/hoursList";
+import { getTimeContraints } from "../../services/firebase/operations/timeConstraints";
+import {
+  getInstitution,
+  getComments,
+} from "../../services/firebase/operations/institution";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -20,12 +27,16 @@ export default () => {
 
   const [data, setData] = useState([]);
   const [teachers, setTeachers] = useState([]);
-  const [subjects, setSujects] = useState([]);
+  const [subjects, setSubjects] = useState([]);
   const [tags, setTags] = useState([]);
   const [students, setStudents] = useState([]);
-  const [spaces, setSpaces] = useState([]);
+  const [days, setDays] = useState({});
+  const [hours, setHours] = useState({});
   const [buildings, setBuildings] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [institution, setInstitution] = useState({});
+  const [comments, setComments] = useState({});
+  const [timeConstraints, setTimeConstraints] = useState([]);
   const [XML, setXML] = useState("");
 
   useEffect(() => {
@@ -38,6 +49,14 @@ export default () => {
         const activitiesFetched = await getActivities(plan ? plan : " ");
         const roomsFetched = await getSpaces(plan ? plan : " ", "rooms");
         const buildingsFetched = await getSpaces(plan ? plan : " ", "building");
+        const daysFetched = await getDaysList(plan ? plan : " ");
+        const hoursFetched = await getHoursList(plan ? plan : " ");
+        const institutionFetched = await getInstitution();
+        const commentsFetched = await getComments();
+        const timeConstraintsFetched = await getTimeContraints(
+          plan ? plan : " "
+        );
+
         return {
           subjectsFetched,
           teachersFetched,
@@ -46,9 +65,14 @@ export default () => {
           activitiesFetched,
           roomsFetched,
           buildingsFetched,
+          daysFetched,
+          hoursFetched,
+          institutionFetched,
+          commentsFetched,
+          timeConstraintsFetched,
         };
-      } catch (errror) {
-        return errror;
+      } catch (error) {
+        return error;
       }
     }
 
@@ -61,8 +85,13 @@ export default () => {
           tagsFetched,
           studentsFetched,
           activitiesFetched,
-          buildingsFetched,
           roomsFetched,
+          buildingsFetched,
+          daysFetched,
+          hoursFetched,
+          institutionFetched,
+          commentsFetched,
+          timeConstraintsFetched,
         } = data;
 
         setData(
@@ -75,12 +104,17 @@ export default () => {
           }))
         );
 
-        setSujects(toArray(subjectsFetched.val()));
+        setSubjects(toArray(subjectsFetched.val()));
         setTeachers(toArray(teachersFetched.val()));
         setStudents(toArray(studentsFetched.val()));
         setTags(toArray(tagsFetched.val()));
         setBuildings(toArray(buildingsFetched.val()));
         setRooms(toArray(roomsFetched.val()));
+        setDays(daysFetched.val());
+        setHours(hoursFetched.val());
+        setInstitution(institutionFetched.val());
+        setComments(commentsFetched.val());
+        setTimeConstraints(toArray(timeConstraintsFetched.val()));
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
   }, []);
@@ -90,80 +124,14 @@ export default () => {
 <?xml version="1.0" encoding="UTF-8"?>
 
 <fet version="5.46.1">
-<Institution_Name>Escuela Politécnica Nacional</Institution_Name>
+<Institution_Name>${institution}</Institution_Name>
 
-<Comments>Facultad de Ingeniería de Sistemas</Comments>
+<Comments>${comments}</Comments>
 
-<Days_List>
-<Number_of_Days>6</Number_of_Days>
-<Day>
-	<Name>Lunes</Name>
-</Day>
-<Day>
-	<Name>Martes</Name>
-</Day>
-<Day>
-	<Name>Miércoles</Name>
-</Day>
-<Day>
-	<Name>Jueves</Name>
-</Day>
-<Day>
-	<Name>Viernes</Name>
-</Day>
-<Day>
-	<Name>Sábado</Name>
-</Day>
-</Days_List>
+${generateDaysListXML()}
 
-<Hours_List>
-<Number_of_Hours>15</Number_of_Hours>
-<Hour>
-	<Name>07:00-08:00</Name>
-</Hour>
-<Hour>
-	<Name>08:00-09:00</Name>
-</Hour>
-<Hour>
-	<Name>09:00-10:00</Name>
-</Hour>
-<Hour>
-	<Name>10:00-11:00</Name>
-</Hour>
-<Hour>
-	<Name>11:00-12:00</Name>
-</Hour>
-<Hour>
-	<Name>12:00-13:00</Name>
-</Hour>
-<Hour>
-	<Name>13:00-14:00</Name>
-</Hour>
-<Hour>
-	<Name>14:00-15:00</Name>
-</Hour>
-<Hour>
-	<Name>15:00-16:00</Name>
-</Hour>
-<Hour>
-	<Name>16:00-17:00</Name>
-</Hour>
-<Hour>
-	<Name>17:00-18:00</Name>
-</Hour>
-<Hour>
-	<Name>18:00-19:00</Name>
-</Hour>
-<Hour>
-	<Name>19:00-20:00</Name>
-</Hour>
-<Hour>
-	<Name>20:00-21:00</Name>
-</Hour>
-<Hour>
-	<Name>21:00-22:00</Name>
-</Hour>
-</Hours_List>
+${generateHoursListXML()}
+
 ${generateSubjectListXML()}
 
 ${generateTagsListXML()}
@@ -174,6 +142,9 @@ ${generateStudentsListXML()}
 
 ${generateActivitiesListXML()}
 
+${generateBuildingsListXML()}
+
+${generateRoomsListXML()}
 
   <Time_Constraints_List>
 <ConstraintBasicCompulsoryTime>
@@ -181,6 +152,8 @@ ${generateActivitiesListXML()}
 <Active>true</Active>
 <Comments></Comments>
 </ConstraintBasicCompulsoryTime>
+
+${generateTimeConstraintsXML()}
 </Time_Constraints_List>
   
   <Space_Constraints_List>
@@ -195,6 +168,30 @@ ${generateActivitiesListXML()}
 </fet>
     `;
     setXML(newXML);
+  };
+
+  const generateDaysListXML = () => {
+    return `
+<Days_List>
+<Number_of_Days>${days.Number_of_Days}</Number_of_Days>
+${
+  days.Days_List &&
+  days.Days_List.map((day) => `<Day><Name>${day}</Name></Day>`).join("")
+}
+</Days_List>
+`;
+  };
+
+  const generateHoursListXML = () => {
+    return `
+<Hours_List>
+<Number_of_Hours>${hours.Number_of_Hours}</Number_of_Hours>
+${
+  hours.Hours_List &&
+  hours.Hours_List.map((hour) => `<Hour><Name>${hour}</Name></Hour>`).join("")
+}
+</Hours_List>
+`;
   };
 
   const generateSubjectListXML = () => {
@@ -257,7 +254,6 @@ ${tags
   };
 
   const generateStudentsListXML = () => {
-    //TODO add groups and subgroups
     return `
 <Students_List>
 ${students
@@ -267,6 +263,35 @@ ${students
             <Name>${student.Name}</Name>
             <Number_of_Students>${student.NumberOfStudents}</Number_of_Students>
             <Comments>${student.Comments}</Comments>
+            ${
+              student.groups
+                ? student.groups.map(
+                    (g) => `
+            <Group>
+<Name>${g.Name}</Name>
+<Number_of_Students>${g.NumberOfStudents}</Number_of_Students>
+<Comments>${g.Comments}</Comments>
+
+${
+  g.subgroups
+    ? g.subgroups.map(
+        (sg) => `
+<Subgroup>
+<Name>${sg.Name}</Name>
+<Number_of_Students>${sg.NumberOfStudents}</Number_of_Students>
+<Comments>${sg.Comments}</Comments>
+</Subgroup>
+
+`
+      )
+    : ""
+}
+</Group>
+
+            `
+                  )
+                : ""
+            }
       </Year>`
   )
   .join("")}
@@ -298,6 +323,48 @@ ${data
   .join("")}
 </Activities_List>
 `;
+  };
+
+  const generateBuildingsListXML = () => {
+    return `
+<Buildings_List>
+${buildings
+  .map(
+    (building) =>
+      `<Building><Name>${building.Name}</Name><Comments>${building.Comments}</Comments></Building>`
+  )
+  .join("")}
+</Buildings_List>
+`;
+  };
+
+  const generateRoomsListXML = () => {
+    return `
+<Rooms_List>
+${rooms
+  .map(
+    (room) =>
+      `<Room>
+            <Name>${room.Name}
+            </Name>
+            <Building>${
+              buildings.find((b) => b.slug === room.Building).Name
+            }</Building>
+            <Capacity>${room.Capacity}</Capacity>
+            <Virtual>false</Virtual>
+            <Comments>${room.Comments}
+            </Comments>
+      </Room>`
+  )
+  .join("")}
+</Rooms_List>
+`;
+  };
+
+  const generateTimeConstraintsXML = () => {
+    return `
+    ${timeConstraints.map((tc) => tc)}
+    `;
   };
 
   return (
