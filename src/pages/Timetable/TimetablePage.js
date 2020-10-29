@@ -4,10 +4,7 @@ import { Button, Col, Row } from "react-bootstrap";
 import { AuthContext } from "../../App";
 import { toArray } from "lodash";
 import { newErrorToast } from "../../utils/toasts";
-import {
-  getSubjects,
-  listenSubjects,
-} from "../../services/firebase/operations/subjects";
+import { getSubjects } from "../../services/firebase/operations/subjects";
 import { getTeachers } from "../../services/firebase/operations/teachers";
 import { getTags } from "../../services/firebase/operations/tags";
 import { getStudents } from "../../services/firebase/operations/students";
@@ -20,10 +17,11 @@ import {
   getInstitution,
   getComments,
 } from "../../services/firebase/operations/institution";
+import axios from "axios";
+import csv from "csvtojson";
 
 export default () => {
   const { plan } = useContext(AuthContext);
-  console.log(plan);
 
   const [data, setData] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -78,7 +76,6 @@ export default () => {
 
     fetchData()
       .then((data) => {
-        console.log("data", data);
         const {
           subjectsFetched,
           teachersFetched,
@@ -119,9 +116,8 @@ export default () => {
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
   }, []);
 
-  const generateXML = () => {
-    const newXML = `
-<?xml version="1.0" encoding="UTF-8"?>
+  const generateXML = async () => {
+    const newXML = `<?xml version="1.0" encoding="UTF-8"?>
 
 <fet version="5.46.1">
 <Institution_Name>${institution}</Institution_Name>
@@ -165,9 +161,34 @@ ${generateTimeConstraintsXML()}
 </Space_Constraints_List>
 
 
-</fet>
-    `;
-    setXML(newXML);
+</fet>`;
+    // setXML(newXML);
+
+    const file = new Blob([newXML], {
+      type: "text/plain;charset=utf-8",
+    });
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await axios.post(
+        " http://64.227.56.89:8080/api/upload",
+        formData
+      );
+      const responseFile = new Blob([response.data]);
+
+      csv({
+        noheader: false,
+      })
+        .fromString(response.data)
+        .then((csv) => {})
+        .catch((e) => console.log(e));
+
+      setXML(response.data);
+    } catch (error) {
+      return error;
+    }
   };
 
   const generateDaysListXML = () => {
@@ -372,7 +393,7 @@ ${rooms
       <h1>Horario</h1>
       {plan ? (
         <>
-          <Button onClick={generateXML}>Generar XML </Button>
+          <Button onClick={generateXML}>Generar Horarios </Button>
           <p>{XML}</p>
         </>
       ) : (
