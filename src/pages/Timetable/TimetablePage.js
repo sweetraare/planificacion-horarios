@@ -19,6 +19,8 @@ import {
 } from "../../services/firebase/operations/institution";
 import axios from "axios";
 import csv from "csvtojson";
+import DataTable from "../../components/DataTable";
+import { textFilter } from "react-bootstrap-table2-filter";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -36,6 +38,9 @@ export default () => {
   const [comments, setComments] = useState({});
   const [timeConstraints, setTimeConstraints] = useState([]);
   const [XML, setXML] = useState("");
+  const [timeTable, setTimeTable] = useState([]);
+  const [showButtons, setShowButtons] = useState(false);
+  const [typeOfTimeTable, setTypeOfTimeTable] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -162,7 +167,6 @@ ${generateTimeConstraintsXML()}
 
 
 </fet>`;
-    // setXML(newXML);
 
     const file = new Blob([newXML], {
       type: "text/plain;charset=utf-8",
@@ -176,13 +180,27 @@ ${generateTimeConstraintsXML()}
         " http://64.227.56.89:8080/api/upload",
         formData
       );
-      const responseFile = new Blob([response.data]);
 
       csv({
         noheader: false,
       })
         .fromString(response.data)
-        .then((csv) => {})
+        .then((csv) => {
+          console.log(csv);
+          console.log("data:", data);
+          const newTimeTable = csv.map((c) => {
+            const activityFound = data.find(
+              (activity) => activity.id === +c["Activity Id"]
+            );
+            const subjectFound = subjects.find(
+              (subject) => subject.Name === c["Subject"]
+            );
+            return { ...c, activityFound, subjectFound };
+          });
+
+          setTimeTable(newTimeTable);
+          setShowButtons(true);
+        })
         .catch((e) => console.log(e));
 
       setXML(response.data);
@@ -388,13 +406,71 @@ ${rooms
     `;
   };
 
+  const showAllTimeTable = () => {
+    setTypeOfTimeTable("ALL");
+  };
+
+  const generateTimeTable = () => {
+    switch (typeOfTimeTable) {
+      case "ALL":
+        console.log(timeTable);
+        return (
+          <DataTable
+            keyField="slug"
+            data={timeTable}
+            columns={[
+              {
+                text: "Nombre",
+                sort: true,
+                dataField: "Name",
+                filter: textFilter({ placeholder: "Buscar" }),
+                headerStyle: {
+                  width: "30%",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                },
+              },
+              {
+                text: "Comentario",
+                dataField: "Comments",
+                filter: textFilter({ placeholder: "Buscar" }),
+                headerStyle: {
+                  width: "30%",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                },
+              },
+              {
+                text: "Número de estudiantes ",
+                dataField: "NumberOfStudents",
+                headerStyle: {
+                  width: "15%",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                },
+              },
+              ,
+            ]}
+          />
+        );
+
+      default:
+        return null;
+    }
+  };
   return (
     <AdminLayout>
       <h1>Horario</h1>
       {plan ? (
         <>
           <Button onClick={generateXML}>Generar Horarios </Button>
-          <p>{XML}</p>
+          {showButtons ? (
+            <>
+              <Button> Horario Profesores</Button>
+              <Button onClick={showAllTimeTable}> Todos los horarios </Button>
+            </>
+          ) : null}
+          {generateTimeTable()}
         </>
       ) : (
         <h1>
