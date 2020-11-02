@@ -291,7 +291,7 @@ export default ({ show, handleClose, action, tag }) => {
   };
 
   return (
-    <Modal show={show} onHide={handleClose} size="lg">
+    <Modal show={show} onHide={handleClose} size="xl">
       <Modal.Header closeButton size="lg">
         <Modal.Title>
           {" "}
@@ -300,177 +300,151 @@ export default ({ show, handleClose, action, tag }) => {
       </Modal.Header>
       <Modal.Body>
         <Row>
-          <Col xs={6} className="select-container border rounded">
-            <div className="select-title">
-              <h4> Profesores </h4>
-              <Form.Control
-                placeholder="Buscar"
-                value={searchTeacher}
-                onChange={(e) => setSearchTeacher(e.target.value)}
-              />
-            </div>
-            {visibleTeachers.map((teacher) => (
-              <div
-                className="item-name"
-                onClick={() => handleSelect(setTeacher, teacher)}
-              >
-                {teacher.Name}
-              </div>
-            ))}
+          <Col xs={12} md={6}>
+            <Row>
+              <Col xs={6} className="select-container border rounded">
+                <div className="select-title">
+                  <h4> Profesores </h4>
+                  <Form.Control
+                    placeholder="Buscar"
+                    value={searchTeacher}
+                    onChange={(e) => setSearchTeacher(e.target.value)}
+                  />
+                </div>
+                {visibleTeachers.map((teacher) => (
+                  <div
+                    className="item-name"
+                    onClick={() => handleSelect(setTeacher, teacher)}
+                  >
+                    {teacher.Name}
+                  </div>
+                ))}
+              </Col>
+              <Col xs={6} className="select-container border rounded">
+                <div className="select-title">
+                  <h4> Categorías </h4>
+                  <Form.Control
+                    placeholder="Buscar"
+                    value={searchTag}
+                    onChange={(e) => setSearchTag(e.target.value)}
+                  />
+                </div>
+                {visibleTags.map((tag) => (
+                  <div
+                    className="item-name"
+                    onClick={() => handleSelect(setTag, tag)}
+                  >
+                    {tag.Name}
+                  </div>
+                ))}
+              </Col>
+              <Col xs={6} className="select-container border rounded">
+                <div className="select-title">
+                  <h4> Estudiantes </h4>
+                  <Form.Control
+                    as="select"
+                    value={studentsType}
+                    onChange={(e) => setStudentsType(e.target.value)}
+                  >
+                    <option value="year">Año </option>
+                    <option value="group">Grupo </option>
+                    <option value="subgroup">Subgrupo </option>
+                  </Form.Control>
+                  <Form.Control
+                    placeholder="Buscar"
+                    value={searchStudent}
+                    onChange={(e) => setSearchStudent(e.target.value)}
+                  />
+                </div>
+                {visibleStudents.map((student) => (
+                  <div
+                    className="item-name"
+                    onClick={() => handleSelect(setStudent, student)}
+                  >
+                    {student.Name}
+                  </div>
+                ))}
+              </Col>
+              <Col xs={6} className="select-container border rounded">
+                <div className="select-title">
+                  <h4> Materias </h4>
+                  <Form.Control
+                    placeholder="Buscar"
+                    value={searchSubject}
+                    onChange={(e) => setSearchSubject(e.target.value)}
+                  />
+                </div>
+                {visibleSubjects.map((subject) => (
+                  <div
+                    className="item-name"
+                    onClick={() => handleSelect(setSubject, subject)}
+                  >
+                    {subject.Name}
+                  </div>
+                ))}
+              </Col>
+            </Row>
           </Col>
-          <Col xs={6} className="select-container border rounded">
-            <div className="select-title">
-              <h4> Categorías </h4>
-              <Form.Control
-                placeholder="Buscar"
-                value={searchTag}
-                onChange={(e) => setSearchTag(e.target.value)}
-              />
-            </div>
-            {visibleTags.map((tag) => (
-              <div
-                className="item-name"
-                onClick={() => handleSelect(setTag, tag)}
-              >
-                {tag.Name}
-              </div>
-            ))}
-          </Col>
-          <Col xs={6} className="select-container border rounded">
-            <div className="select-title">
-              <h4> Estudiantes </h4>
-              <Form.Control
-                as="select"
-                value={studentsType}
-                onChange={(e) => setStudentsType(e.target.value)}
-              >
-                <option value="year">Año </option>
-                <option value="group">Grupo </option>
-                <option value="subgroup">Subgrupo </option>
-              </Form.Control>
-              <Form.Control
-                placeholder="Buscar"
-                value={searchStudent}
-                onChange={(e) => setSearchStudent(e.target.value)}
-              />
-            </div>
-            {visibleStudents.map((student) => (
-              <div
-                className="item-name"
-                onClick={() => handleSelect(setStudent, student)}
-              >
-                {student.Name}
-              </div>
-            ))}
-          </Col>
-          <Col xs={6} className="select-container border rounded">
-            <div className="select-title">
-              <h4> Materias </h4>
-              <Form.Control
-                placeholder="Buscar"
-                value={searchSubject}
-                onChange={(e) => setSearchSubject(e.target.value)}
-              />
-            </div>
-            {visibleSubjects.map((subject) => (
-              <div
-                className="item-name"
-                onClick={() => handleSelect(setSubject, subject)}
-              >
-                {subject.Name}
-              </div>
-            ))}
-          </Col>
-        </Row>
-        <hr />
-        <div>
-          <Form.Group as={Row}>
-            <Form.Label column sm={4}>
-              Profesor seleccionado:
-            </Form.Label>
-            <Col sm={8}>
-              <Form.Control
-                name="name"
-                type="text"
-                value={Teacher.Name}
-                readOnly
-              />
-            </Col>
-          </Form.Group>
-          <Form.Group as={Row}>
-            <Form.Label column sm={4}>
-              Categoría seleccionada:
-            </Form.Label>
-            <Col sm={8}>
-              <Form.Control name="name" type="text" value={Tag.Name} readOnly />
-            </Col>
-          </Form.Group>
-          <Form.Group as={Row}>
-            <Form.Label column sm={4}>
-              Estudiante seleccionado:
-            </Form.Label>
-            <Col sm={8}>
-              <Form.Control
-                name="name"
-                type="text"
-                value={Student.Name}
-                readOnly
-              />
-            </Col>
-          </Form.Group>
-          <Form.Group as={Row}>
-            <Form.Label column sm={4}>
-              Materia seleccionada:
-            </Form.Label>
-            <Col sm={8}>
-              <Form.Control
-                name="name"
-                type="text"
-                value={Subject.Name}
-                readOnly
-              />
-            </Col>
-          </Form.Group>
-        </div>
-        <hr />
-        <div>
-          <Form.Group as={Row}>
-            <Form.Label column sm={4}>
-              Dividir:
-            </Form.Label>
-            <Col sm={8}>
-              <Form.Control
-                name="divide"
-                type="number"
-                min={1}
-                max={35}
-                value={split}
-                onChange={(e) => setSplit(+e.target.value)}
-              />
-            </Col>
-          </Form.Group>
-          <Row>
-            <Col xs={6}>
-              <Table bordered responsive>
-                <thead>
-                  <tr>
-                    <th>Disivión</th>
-                    {createTableHeader()}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    {" "}
-                    <th>Duración</th>
-                    {createTableBody()}
-                  </tr>
-                </tbody>
-              </Table>
-            </Col>
-            <Col xs={6}>
+          <Col xs={12} md={6}>
+            <div>
               <Form.Group as={Row}>
                 <Form.Label column sm={4}>
-                  Min días:
+                  Profesor seleccionado:
+                </Form.Label>
+                <Col sm={8}>
+                  <Form.Control
+                    name="name"
+                    type="text"
+                    value={Teacher.Name}
+                    readOnly
+                  />
+                </Col>
+              </Form.Group>
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Categoría seleccionada:
+                </Form.Label>
+                <Col sm={8}>
+                  <Form.Control
+                    name="name"
+                    type="text"
+                    value={Tag.Name}
+                    readOnly
+                  />
+                </Col>
+              </Form.Group>
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Estudiante seleccionado:
+                </Form.Label>
+                <Col sm={8}>
+                  <Form.Control
+                    name="name"
+                    type="text"
+                    value={Student.Name}
+                    readOnly
+                  />
+                </Col>
+              </Form.Group>
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Materia seleccionada:
+                </Form.Label>
+                <Col sm={8}>
+                  <Form.Control
+                    name="name"
+                    type="text"
+                    value={Subject.Name}
+                    readOnly
+                  />
+                </Col>
+              </Form.Group>
+            </div>
+            <hr />
+            <div>
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Dividir:
                 </Form.Label>
                 <Col sm={8}>
                   <Form.Control
@@ -478,42 +452,78 @@ export default ({ show, handleClose, action, tag }) => {
                     type="number"
                     min={1}
                     max={35}
-                    value={minDays}
-                    onChange={(e) => setMinDays(+e.target.value)}
+                    value={split}
+                    onChange={(e) => setSplit(+e.target.value)}
                   />
                 </Col>
               </Form.Group>
-              {split > 1 && (
-                <>
+              <Row>
+                <Col xs={6}>
+                  <Table bordered responsive>
+                    <thead>
+                      <tr>
+                        <th>Disivión</th>
+                        {createTableHeader()}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        {" "}
+                        <th>Duración</th>
+                        {createTableBody()}
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
+                <Col xs={6}>
                   <Form.Group as={Row}>
                     <Form.Label column sm={4}>
-                      Peso:
+                      Min días:
                     </Form.Label>
                     <Col sm={8}>
                       <Form.Control
                         name="divide"
                         type="number"
-                        min={0}
-                        max={100}
-                        value={weight}
-                        onChange={(e) => setWeight(+e.target.value)}
+                        min={1}
+                        max={35}
+                        value={minDays}
+                        onChange={(e) => setMinDays(+e.target.value)}
                       />
                     </Col>
                   </Form.Group>
-                  <Form.Group>
-                    <Form.Check
-                      type="checkbox"
-                      label="Consecutiva"
-                      value={consecutive}
-                      checked={consecutive}
-                      onClick={() => setConsecutive(!consecutive)}
-                    />
-                  </Form.Group>
-                </>
-              )}
-            </Col>
-          </Row>
-        </div>
+                  {split > 1 && (
+                    <>
+                      <Form.Group as={Row}>
+                        <Form.Label column sm={4}>
+                          Peso:
+                        </Form.Label>
+                        <Col sm={8}>
+                          <Form.Control
+                            name="divide"
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={weight}
+                            onChange={(e) => setWeight(+e.target.value)}
+                          />
+                        </Col>
+                      </Form.Group>
+                      <Form.Group>
+                        <Form.Check
+                          type="checkbox"
+                          label="Consecutiva"
+                          value={consecutive}
+                          checked={consecutive}
+                          onClick={() => setConsecutive(!consecutive)}
+                        />
+                      </Form.Group>
+                    </>
+                  )}
+                </Col>
+              </Row>
+            </div>
+          </Col>
+        </Row>
       </Modal.Body>
       <Modal.Footer>
         <Button onClick={handleSave} variant="primary">

@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import AdminLayout from "../../HOC/AdminLayout";
-import { Button, Col, Row } from "react-bootstrap";
+import { Button, Col, Row, Table } from "react-bootstrap";
 import { AuthContext } from "../../App";
 import { toArray } from "lodash";
+import { orderBy } from "lodash";
 import { newErrorToast } from "../../utils/toasts";
 import { getSubjects } from "../../services/firebase/operations/subjects";
 import { getTeachers } from "../../services/firebase/operations/teachers";
@@ -41,6 +42,7 @@ export default () => {
   const [timeTable, setTimeTable] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
   const [typeOfTimeTable, setTypeOfTimeTable] = useState("");
+  const [activeGenerateXML, setActiveGenerateXML] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -121,6 +123,20 @@ export default () => {
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
   }, []);
 
+  useEffect(() => {
+    if (
+      subjects.length &&
+      teachers.length &&
+      students.length &&
+      tags.length &&
+      buildings.length &&
+      rooms.length &&
+      timeConstraints.length
+    ) {
+      setActiveGenerateXML(true);
+    }
+  }, [subjects, teachers, students, tags, buildings, rooms, timeConstraints]);
+
   const generateXML = async () => {
     const newXML = `<?xml version="1.0" encoding="UTF-8"?>
 
@@ -186,7 +202,7 @@ ${generateTimeConstraintsXML()}
       })
         .fromString(response.data)
         .then((csv) => {
-          console.log(csv);
+          console.log("csv:", csv);
           console.log("data:", data);
           const newTimeTable = csv.map((c) => {
             const activityFound = data.find(
@@ -195,7 +211,8 @@ ${generateTimeConstraintsXML()}
             const subjectFound = subjects.find(
               (subject) => subject.Name === c["Subject"]
             );
-            return { ...c, activityFound, subjectFound };
+            const hourIndex = hours.Hours_List.findIndex((h) => h === c.Hour);
+            return { ...c, activityFound, subjectFound, hourIndex };
           });
 
           setTimeTable(newTimeTable);
@@ -413,45 +430,56 @@ ${rooms
   const generateTimeTable = () => {
     switch (typeOfTimeTable) {
       case "ALL":
-        console.log(timeTable);
+        console.log("timeTableALL:", timeTable);
+
+        const allTimeTable = data.map((activity) => {
+          const activityTimeTables = [...timeTable].filter(
+            (t) => +t["Activity Id"] === activity.id
+          );
+
+          const firstTimeTable = orderBy(
+            activityTimeTables,
+            ["hourIndex"],
+            ["desc"]
+          )[0];
+
+          return { ...activity, firstTimeTable };
+        });
+
+        console.log("alltime table", allTimeTable);
+
         return (
-          <DataTable
-            keyField="slug"
-            data={timeTable}
-            columns={[
-              {
-                text: "Nombre",
-                sort: true,
-                dataField: "Name",
-                filter: textFilter({ placeholder: "Buscar" }),
-                headerStyle: {
-                  width: "30%",
-                  textAlign: "center",
-                  verticalAlign: "middle",
-                },
-              },
-              {
-                text: "Comentario",
-                dataField: "Comments",
-                filter: textFilter({ placeholder: "Buscar" }),
-                headerStyle: {
-                  width: "30%",
-                  textAlign: "center",
-                  verticalAlign: "middle",
-                },
-              },
-              {
-                text: "Número de estudiantes ",
-                dataField: "NumberOfStudents",
-                headerStyle: {
-                  width: "15%",
-                  textAlign: "center",
-                  verticalAlign: "middle",
-                },
-              },
-              ,
-            ]}
-          />
+          <Table>
+            <thead>
+              <tr>
+                <th>Profesor</th>
+                <th>Materia</th>
+                <th>Estudiantes</th>
+                {days.Days_List && days.Days_List.map((day) => <th>{day}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {allTimeTable.map((tt) => (
+                <tr>
+                  <td>{tt.Teacher}</td>
+                  <td>{tt.Subject}</td>
+                  <td>{tt.Students}</td>
+                  {days.Days_List &&
+                    days.Days_List.map((day, index) => {
+                      return (
+                        <td>
+                          {day === tt.firstTimeTable.Day
+                            ? `${tt.firstTimeTable.Hour} \n ${
+                                hours.Hours_List[index + tt.Duration]
+                              } `
+                            : ""}
+                        </td>
+                      );
+                    })}
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         );
 
       default:
@@ -463,7 +491,9 @@ ${rooms
       <h1>Horario</h1>
       {plan ? (
         <>
-          <Button onClick={generateXML}>Generar Horarios </Button>
+          <Button onClick={generateXML} disabled={!activeGenerateXML}>
+            Generar Horarios{" "}
+          </Button>
           {showButtons ? (
             <>
               <Button> Horario Profesores</Button>
