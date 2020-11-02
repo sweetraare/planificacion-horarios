@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
 import AdminLayout from "../../HOC/AdminLayout";
 import { AuthContext } from "../../App";
-import { getTags, listenTags } from "../../services/firebase/operations/tags";
-import { getActivities } from "../../services/firebase/operations/activities";
+import {
+  getActivities,
+  listenActivities,
+} from "../../services/firebase/operations/activities";
 import toArray from "lodash/toArray";
 import { newErrorToast } from "../../utils/toasts";
 import { Button, Col, Row } from "react-bootstrap";
@@ -16,6 +18,10 @@ import {
 import DataTable from "../../components/DataTable";
 import { textFilter } from "react-bootstrap-table2-filter";
 import ActivitiesFormModal from "./components/ActivitiesFormModal";
+import { getStudents } from "../../services/firebase/operations/students";
+import { getSubjects } from "../../services/firebase/operations/subjects";
+import { getTags } from "../../services/firebase/operations/tags";
+import { getTeachers } from "../../services/firebase/operations/teachers";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -24,6 +30,10 @@ export default () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedTag, setSelectedTag] = useState({});
   const [action, setAction] = useState("");
+  const [students, setStudents] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [subjects, setSubjects] = useState([]);
 
   const handleAddItem = () => {
     setShowFormModal(true);
@@ -49,27 +59,72 @@ export default () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        return await getActivities(plan ? plan : " ");
-      } catch (errror) {
-        return errror;
+        const activitiesFetched = await getActivities(plan ? plan : " ");
+        const studentsFetched = await getStudents(plan ? plan : " ");
+        const tagsFetched = await getTags(plan ? plan : " ");
+        const teachersFetched = await getTeachers(plan ? plan : " ");
+        const subjectsFetched = await getSubjects(plan ? plan : " ");
+        return {
+          activitiesFetched,
+          studentsFetched,
+          tagsFetched,
+          teachersFetched,
+          subjectsFetched,
+        };
+      } catch (error) {
+        return error;
       }
     }
 
     fetchData()
       .then((data) => {
-        if (data.exists()) {
-          setData(toArray(data.val()));
+        const {
+          activitiesFetched,
+          studentsFetched,
+          tagsFetched,
+          teachersFetched,
+          subjectsFetched,
+        } = data;
+        if (activitiesFetched.exists()) {
+          setData(
+            toArray(activitiesFetched.val()).map((activity) => ({
+              ...activity,
+              Students: studentsFetched.val()[activity.Students],
+              Tag: tagsFetched.val()[activity.Tag],
+              Teacher: teachersFetched.val()[activity.Teacher],
+              Subject: subjectsFetched.val()[activity.Subject],
+            }))
+          );
         }
+        setStudents(toArray(studentsFetched.val()));
+        setTags(toArray(tagsFetched.val()));
+        setTeachers(toArray(teachersFetched.val()));
+        setSubjects(toArray(subjectsFetched.val()));
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
-
-    listenTagsChange();
+    listenActivitiesChange();
   }, []);
 
-  const listenTagsChange = () => {
-    listenTags(plan ? plan : " ", (tags) => {
-      if (tags.exists()) {
-        setData(toArray(tags.val()));
+  const listenActivitiesChange = async () => {
+    const studentsFetched = await getStudents(plan ? plan : " ");
+    const tagsFetched = await getTags(plan ? plan : " ");
+    const teachersFetched = await getTeachers(plan ? plan : " ");
+    const subjectsFetched = await getSubjects(plan ? plan : " ");
+
+    listenActivities(plan ? plan : " ", (data) => {
+      if (data.exists()) {
+        setData(
+          toArray(data.val()).map((activity) => {
+            console.log({ students, tags, teachers, subjects });
+            return {
+              ...activity,
+              Students: studentsFetched.val()[activity.Students],
+              Tag: tagsFetched.val()[activity.Tag],
+              Teacher: teachersFetched.val()[activity.Teacher],
+              Subject: subjectsFetched.val()[activity.Subject],
+            };
+          })
+        );
       }
     });
   };
@@ -95,60 +150,77 @@ export default () => {
                 data={data}
                 columns={[
                   {
-                    text: "Nombre",
+                    text: "Id",
                     sort: true,
-                    dataField: "Name",
-                    filter: textFilter({ placeholder: "Buscar" }),
+                    dataField: "id",
                     headerStyle: {
-                      width: "30%",
                       textAlign: "center",
                       verticalAlign: "middle",
                     },
                   },
                   {
-                    text: "Comentario",
-                    dataField: "Comments",
+                    text: "Profesor",
+                    dataField: "Teacher",
                     filter: textFilter({ placeholder: "Buscar" }),
+                    formatter: (cell) => cell && cell.Name,
                     headerStyle: {
-                      width: "30%",
                       textAlign: "center",
                       verticalAlign: "middle",
                     },
                   },
                   {
-                    text: "Acciones",
-                    dataField: "",
-                    formatter: (cell, row) => {
-                      return (
-                        <>
-                          <Button
-                            onClick={() => handleEditItem(row)}
-                            className="btn-sm"
-                            variant="outline-secondary"
-                          >
-                            <FontAwesomeIcon icon={faPencilAlt} /> &nbsp; Editar
-                          </Button>
-                          <Button
-                            variant={
-                              row.active ? "outline-danger" : "outline-success"
-                            }
-                            className="btn-sm"
-                            onClick={() => handleChangeActiveItem(row)}
-                          >
-                            <FontAwesomeIcon
-                              icon={row.active ? faTrashAlt : faCheck}
-                            />
-                            &nbsp;
-                            {row.active
-                              ? "Activar actividades"
-                              : "Desactivar actividades"}
-                          </Button>
-                        </>
-                      );
-                    },
+                    text: "Materia",
+                    dataField: "Subject",
+                    formatter: (cell) => cell && cell.Name,
                     align: "center",
                     headerStyle: {
-                      width: "15%",
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Estudiantes",
+                    dataField: "Students",
+                    formatter: (cell) => cell && cell.Name,
+                    align: "center",
+                    headerStyle: {
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Código Actividad",
+                    dataField: "Tag",
+                    formatter: (cell) => cell && cell.Name,
+                    align: "center",
+                    headerStyle: {
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Duración",
+                    dataField: "Duration",
+                    align: "center",
+                    headerStyle: {
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Grupo de actividades",
+                    dataField: "ActivityGroup",
+                    align: "center",
+                    headerStyle: {
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Duración total",
+                    dataField: "TotalDuration",
+                    align: "center",
+                    headerStyle: {
                       textAlign: "center",
                       verticalAlign: "middle",
                     },
