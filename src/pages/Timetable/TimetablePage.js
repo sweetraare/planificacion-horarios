@@ -20,8 +20,6 @@ import {
 } from "../../services/firebase/operations/institution";
 import axios from "axios";
 import csv from "csvtojson";
-import DataTable from "../../components/DataTable";
-import { textFilter } from "react-bootstrap-table2-filter";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -43,6 +41,7 @@ export default () => {
   const [showButtons, setShowButtons] = useState(false);
   const [typeOfTimeTable, setTypeOfTimeTable] = useState("");
   const [activeGenerateXML, setActiveGenerateXML] = useState(false);
+  const [showSaveExcel, setShowSaveExcel] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -430,8 +429,6 @@ ${rooms
   const generateTimeTable = () => {
     switch (typeOfTimeTable) {
       case "ALL":
-        console.log("timeTableALL:", timeTable);
-
         const allTimeTable = data.map((activity) => {
           const activityTimeTables = [...timeTable].filter(
             (t) => +t["Activity Id"] === activity.id
@@ -440,21 +437,20 @@ ${rooms
           const firstTimeTable = orderBy(
             activityTimeTables,
             ["hourIndex"],
-            ["desc"]
+            ["asc"]
           )[0];
 
           return { ...activity, firstTimeTable };
         });
 
-        console.log("alltime table", allTimeTable);
-
         return (
-          <Table>
+          <Table striped bordered responsive>
             <thead>
               <tr>
                 <th>Profesor</th>
                 <th>Materia</th>
                 <th>Estudiantes</th>
+                <th>Duración</th>
                 {days.Days_List && days.Days_List.map((day) => <th>{day}</th>)}
               </tr>
             </thead>
@@ -464,15 +460,32 @@ ${rooms
                   <td>{tt.Teacher}</td>
                   <td>{tt.Subject}</td>
                   <td>{tt.Students}</td>
+                  <td>{tt.Duration}</td>
                   {days.Days_List &&
                     days.Days_List.map((day, index) => {
                       return (
                         <td>
-                          {day === tt.firstTimeTable.Day
-                            ? `${tt.firstTimeTable.Hour} \n ${
-                                hours.Hours_List[index + tt.Duration]
-                              } `
-                            : ""}
+                          {day === tt.firstTimeTable.Day ? (
+                            <>
+                              {" "}
+                              <div> {tt.firstTimeTable.Hour}</div>
+                              {tt.Duration > 1 ? (
+                                <div>
+                                  {
+                                    hours.Hours_List[
+                                      tt.firstTimeTable.hourIndex +
+                                        tt.Duration -
+                                        1
+                                    ]
+                                  }
+                                </div>
+                              ) : (
+                                ""
+                              )}
+                            </>
+                          ) : (
+                            ""
+                          )}
                         </td>
                       );
                     })}

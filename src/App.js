@@ -23,6 +23,7 @@ import {
   SUBJECTS_PAGE,
   ACTIVITIES_PAGE,
   TIMETABLE_PAGE,
+  RESTRICTIONS_PAGE,
 } from "./constants/routes";
 
 import { auth } from "./services/firebase/config";
@@ -41,6 +42,7 @@ import SpacesPage from "./pages/Spaces/SpacesPage";
 import TagsPage from "./pages/Tags/TagsPage";
 import ActivitiesPage from "./pages/Activities/ActivitiesPage";
 import TimetablePage from "./pages/Timetable/TimetablePage";
+import RestrictionPage from "./pages/Restrictions/RestrictionPage";
 
 export const AuthContext = React.createContext(null);
 
@@ -79,6 +81,7 @@ export default () => {
             <Route path={LOGIN_PAGE} exact component={LoginPage} />
             <Route path={STUDENTS_PAGE} exact component={StudentsPage} />
             <Route path={ACTIVITIES_PAGE} exact component={ActivitiesPage} />
+            <Route path={RESTRICTIONS_PAGE} exact component={RestrictionPage} />
 
             <Route
               path={AUTHENTICATION_SERVICES}

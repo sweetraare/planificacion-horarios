@@ -12,6 +12,7 @@ import {
   faTags,
   faPaperclip,
   faCalendarAlt,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -25,6 +26,7 @@ import {
   TAGS_PAGE,
   ACTIVITIES_PAGE,
   TIMETABLE_PAGE,
+  RESTRICTIONS_PAGE,
 } from "../../constants/routes";
 import LogOutModal from "../LogOutModal";
 
@@ -73,6 +75,12 @@ const SideBarMenu = ({ history, onToggle }) => {
               <FontAwesomeIcon icon={faCalendarAlt} className="icon" />
             </NavIcon>
             <NavText>Horario</NavText>
+          </NavItem>
+          <NavItem eventKey={RESTRICTIONS_PAGE.substring(1)}>
+            <NavIcon>
+              <FontAwesomeIcon icon={faLock} className="icon" />
+            </NavIcon>
+            <NavText>Restricciones</NavText>
           </NavItem>
           <NavItem eventKey={SUBJECTS_PAGE.substring(1)}>
             <NavIcon>
