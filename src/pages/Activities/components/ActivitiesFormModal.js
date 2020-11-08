@@ -22,7 +22,6 @@ export default ({ show, handleClose, action, tag }) => {
 
   const [activities, setActivities] = useState([]);
 
-  const [Comments, setComments] = useState("");
   const [Teachers, setTeachers] = useState([]);
   const [Students, setStudents] = useState([]);
   const [Tags, setTags] = useState([]);
