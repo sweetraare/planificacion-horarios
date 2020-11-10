@@ -14,6 +14,7 @@ import { getSpaces } from "../../services/firebase/operations/spaces";
 import { getDaysList } from "../../services/firebase/operations/daysList";
 import { getHoursList } from "../../services/firebase/operations/hoursList";
 import { getTimeContraints } from "../../services/firebase/operations/timeConstraints";
+import { getBreakContraints } from "../../services/firebase/operations/breakConstraint";
 import {
   getInstitution,
   getComments,
@@ -42,6 +43,7 @@ export default () => {
   const [typeOfTimeTable, setTypeOfTimeTable] = useState("");
   const [activeGenerateXML, setActiveGenerateXML] = useState(false);
   const [showSaveExcel, setShowSaveExcel] = useState(false);
+  const [breakConstraints, setBreakConstraints] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -57,6 +59,9 @@ export default () => {
         const hoursFetched = await getHoursList(plan ? plan : " ");
         const institutionFetched = await getInstitution();
         const commentsFetched = await getComments();
+        const breakConstraintFetched = await getBreakContraints(
+          plan ? plan : " "
+        );
         const timeConstraintsFetched = await getTimeContraints(
           plan ? plan : " "
         );
@@ -74,6 +79,7 @@ export default () => {
           institutionFetched,
           commentsFetched,
           timeConstraintsFetched,
+          breakConstraintFetched,
         };
       } catch (error) {
         return error;
@@ -95,6 +101,7 @@ export default () => {
           institutionFetched,
           commentsFetched,
           timeConstraintsFetched,
+          breakConstraintFetched,
         } = data;
 
         setData(
@@ -118,6 +125,9 @@ export default () => {
         setInstitution(institutionFetched.val());
         setComments(commentsFetched.val());
         setTimeConstraints(toArray(timeConstraintsFetched.val()));
+        if (breakConstraintFetched.val()) {
+          setBreakConstraints(breakConstraintFetched.val());
+        }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
   }, []);
@@ -170,6 +180,7 @@ ${generateRoomsListXML()}
 </ConstraintBasicCompulsoryTime>
 
 ${generateTimeConstraintsXML()}
+${generateBreakConstraintXML()}
 </Time_Constraints_List>
   
   <Space_Constraints_List>
@@ -420,6 +431,22 @@ ${rooms
     return `
     ${timeConstraints.map((tc) => tc)}
     `;
+  };
+  const generateBreakConstraintXML = () => {
+    if (breakConstraints.length) {
+      return `
+<ConstraintBreakTimes>
+	<Weight_Percentage>100</Weight_Percentage>
+	<Number_of_Break_Times>${breakConstraints.length}</Number_of_Break_Times>
+  ${breakConstraints.map(
+    (bc) =>
+      `<Break_Time><Day>${bc.day}</Day><Hour>${bc.hour}</Hour></Break_Time>`
+  )}
+</ConstraintBreakTimes>
+    `;
+    } else {
+      return "";
+    }
   };
 
   const showAllTimeTable = () => {

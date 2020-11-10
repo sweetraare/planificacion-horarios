@@ -1,18 +1,9 @@
 import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../App";
 import AdminLayout from "../../HOC/AdminLayout";
-import {
-  Row,
-  Col,
-  Button,
-  Accordion,
-  Card,
-  Table,
-  Form,
-} from "react-bootstrap";
+import { Row, Col, Button, Card, Table, Form } from "react-bootstrap";
 import { getHoursList } from "../../services/firebase/operations/hoursList";
 import { getDaysList } from "../../services/firebase/operations/daysList";
-import { getTimeContraints } from "../../services/firebase/operations/timeConstraints";
 import { getTeachers } from "../../services/firebase/operations/teachers";
 import { getSubjects } from "../../services/firebase/operations/subjects";
 import { getStudents } from "../../services/firebase/operations/students";
@@ -23,6 +14,16 @@ import toArray from "lodash/toArray";
 import orderBy from "lodash/orderBy";
 import RestrictionFormModal from "./components/RestrictionFormModal";
 import NewRestrictionFormModal from "./components/NewRestrictionFormModal";
+import {
+  newSuccessToast,
+  newInformationToast,
+  newErrorToast,
+} from "../../utils/toasts";
+import {
+  addBreakConstraint,
+  getBreakContraints,
+  removeAllBreakContraints,
+} from "../../services/firebase/operations/breakConstraint";
 
 import "./RestrictionPage.css";
 
@@ -33,7 +34,6 @@ export default () => {
   const [hours, setHours] = useState({});
   const [days, setDays] = useState({});
   const [breakValues, setBreakValues] = useState([]);
-  const [timeContraints, setTimeConstraints] = useState([]);
   const [showRestrictionFormModal, setShowRestrictionModal] = useState(false);
   const [showNewRestrictionFormModal, setNewShowRestrictionModal] = useState(
     false
@@ -53,29 +53,32 @@ export default () => {
   const [rooms, setRooms] = useState([]);
   const [tags, setTags] = useState([]);
   const [visibleActivities, setVisibleActivities] = useState([]);
+  const [isAddingBreak, setIsAddingBreak] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const hoursFetched = await getHoursList();
         const daysFetched = await getDaysList();
-        const timeConstraintsFetched = await getTimeContraints();
         const teachersFetched = await getTeachers(plan ? plan : " ");
         const subjectsFetched = await getSubjects(plan ? plan : " ");
         const studentsFetched = await getStudents(plan ? plan : " ");
         const activitiesFetched = await getActivities(plan ? plan : " ");
         const roomsFetched = await getSpaces(plan ? plan : " ", "rooms");
         const tagsFetched = await getTags(plan ? plan : " ");
+        const breakConstraintFetched = await getBreakContraints(
+          plan ? plan : " "
+        );
         return {
           hoursFetched,
           daysFetched,
-          timeConstraintsFetched,
           teachersFetched,
           subjectsFetched,
           studentsFetched,
           activitiesFetched,
           roomsFetched,
           tagsFetched,
+          breakConstraintFetched,
         };
       } catch (error) {
         return error;
@@ -85,22 +88,19 @@ export default () => {
       const {
         hoursFetched,
         daysFetched,
-        timeConstraintsFetched,
         teachersFetched,
         subjectsFetched,
         studentsFetched,
         activitiesFetched,
         roomsFetched,
         tagsFetched,
+        breakConstraintFetched,
       } = data;
       if (hoursFetched.exists()) {
         setHours(hoursFetched.val());
       }
       if (daysFetched.exists()) {
         setDays(daysFetched.val());
-      }
-      if (timeConstraintsFetched.exists()) {
-        setTimeConstraints(toArray(timeConstraintsFetched.val()));
       }
       if (teachersFetched.exists()) {
         setTeachers(toArray(teachersFetched.val()));
@@ -119,6 +119,9 @@ export default () => {
       }
       if (tagsFetched.exists()) {
         setTags(toArray(tagsFetched.val()));
+      }
+      if (breakConstraintFetched.exists()) {
+        setBreakValues(breakConstraintFetched.val());
       }
     });
   }, []);
@@ -151,9 +154,21 @@ export default () => {
   }, [selectedTeacher, selectedSubject, selectedStudents, activities]);
 
   const handleSelectTime = ({ day, hour }) => {
-    setSelectedHour(hour);
-    setSelectedDay(day);
-    setShowRestrictionModal(true);
+    if (isAddingBreak) {
+      console.log({ day, hour, breakValues });
+      const breakValueFound = breakValues.find(
+        (bv) => bv.day === day && bv.hour === hour
+      );
+      if (breakValueFound) {
+        setBreakValues(
+          [...breakValues].filter((bv) => !(bv.day === day && bv.hour === hour))
+        );
+      } else {
+        setBreakValues([...breakValues].concat({ day, hour }));
+      }
+    } else {
+      setShowRestrictionModal(true);
+    }
   };
 
   const handleAddNew = () => {
@@ -166,6 +181,33 @@ export default () => {
     setSelectedStudents("");
     setSelectedActivity("");
     setSelectedTag("");
+  };
+
+  const handleClickBreak = () => {
+    newInformationToast(
+      `Por favor, seleccione en el horario de abajo las horas para receso.`
+    );
+    setIsAddingBreak(true);
+  };
+  const renderScheduleValue = ({ day, hour }) => {
+    if (isAddingBreak) {
+      if (breakValues.find((bv) => bv.day === day && bv.hour === hour)) {
+        return "--X--";
+      }
+    }
+    return "";
+  };
+
+  const handleSaveBreak = async () => {
+    try {
+      setIsAddingBreak(false);
+      await removeAllBreakContraints(plan ? plan : " ");
+      await addBreakConstraint(plan ? plan : " ", breakValues);
+      newSuccessToast(`Receso agregado de manera exitosa`);
+    } catch (e) {
+      console.log(e);
+      newErrorToast(`ERROR: ${e.message}`);
+    }
   };
 
   return (
@@ -266,13 +308,13 @@ export default () => {
                                   if (g.subgroups) {
                                     acc2 = acc2.concat(
                                       g.subgroups.map((sg) => ({
-                                        slug: sg.slug,
+                                        slug: sg.Name,
                                         Name: `${sg.Name} | ${g.Name} | ${s.Name}`,
                                       }))
                                     );
                                   }
                                   acc2 = acc2.concat({
-                                    slug: g.slug,
+                                    slug: g.Name,
                                     Name: `${g.Name} | ${s.Name}`,
                                   });
                                   return acc2;
@@ -343,6 +385,10 @@ export default () => {
               <Row>
                 <Button onClick={handleAddNew}>Agregar Restricción</Button>
                 <Button onClick={handleClear}>Limpiar</Button>
+                <Button onClick={handleClickBreak}>Receso</Button>
+                {isAddingBreak && (
+                  <Button onClick={handleSaveBreak}>Guardar Receso</Button>
+                )}
               </Row>
             </Card.Body>
           </Card>
@@ -360,9 +406,9 @@ export default () => {
                     <td>{hour}</td>
                     {days.Days_List &&
                       days.Days_List.map((day) => (
-                        <td
-                          onClick={() => handleSelectTime({ day, hour })}
-                        ></td>
+                        <td onClick={() => handleSelectTime({ day, hour })}>
+                          {renderScheduleValue({ day, hour })}
+                        </td>
                       ))}
                   </tr>
                 ))}
@@ -392,11 +438,39 @@ export default () => {
         activity={selectedActivity}
         tag={selectedTag}
         teachersList={teachers}
-        subjectsList={subjects}
         roomsList={rooms}
-        studentsList={students}
         activitiesList={activities}
         tagsList={tags}
+        subjectsList={subjects}
+        studentsList={
+          students.length
+            ? students.reduce((acc, s) => {
+                if (s.groups) {
+                  const subgroupsList = s.groups.reduce((acc2, g) => {
+                    if (g.subgroups) {
+                      acc2 = acc2.concat(
+                        g.subgroups.map((sg) => ({
+                          slug: sg.Name,
+                          Name: sg.Name,
+                        }))
+                      );
+                    }
+                    acc2 = acc2.concat({
+                      slug: g.Name,
+                      Name: g.Name,
+                    });
+                    return acc2;
+                  }, []);
+                  acc = acc.concat(subgroupsList);
+                }
+                acc = acc.concat({
+                  slug: s.slug,
+                  Name: s.Name,
+                });
+                return acc;
+              }, [])
+            : []
+        }
       />
     </AdminLayout>
   );
