@@ -164,13 +164,14 @@ export default ({ show, handleClose, action, tag }) => {
           await addActivity(plan ? plan : " ", newActivity.slug, newActivity);
         }
       } else {
-        const newTimeContraint = `<Weight_Percentage>${+weight}</Weight_Percentage>
+        const newTimeContraint = `<ConstraintMinDaysBetweenActivities><Weight_Percentage>${+weight}</Weight_Percentage>
 	<Consecutive_If_Same_Day>${consecutive}</Consecutive_If_Same_Day>
 	<Number_of_Activities>${splitList.length}</Number_of_Activities>
   ${splitList.map((s, i) => `<Activity_Id>${maxID + i + 1}</Activity_Id>`)}
 	<MinDays>${minDays}</MinDays>
 	<Active>true</Active>
-	<Comments></Comments>`;
+	<Comments></Comments>
+          </ConstraintMinDaysBetweenActivities>`;
         console.log(newTimeContraint);
         if (splitList.every((s) => +s)) {
           const totalDuration = splitList.reduce((acc, s) => acc + s);

@@ -6,15 +6,7 @@ import { AuthContext } from "../../../App";
 import { RESTRICTION_TYPES } from "../../../constants/restrictionTypes";
 import { addTimeConstraintInput } from "../../../services/firebase/operations/timeConstraintsInput";
 
-export default ({
-  show,
-  handleClose,
-  day,
-  hour,
-  restrictions,
-  teacher,
-  activity,
-}) => {
+export default ({ show, handleClose, day, hour, teacher, activity }) => {
   const { plan } = useContext(AuthContext);
   const [selectedRestrictionType, setSelectedRestrictionType] = useState("");
   const [currentRestrictions, setCurrentRestrictions] = useState([]);
@@ -36,7 +28,7 @@ export default ({
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
         <Modal.Title>
-          Horario seleccionado: {day}: {hour}
+          Restricciones de tiempo de {day}: {hour}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>

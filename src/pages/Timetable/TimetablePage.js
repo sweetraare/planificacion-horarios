@@ -14,6 +14,7 @@ import { getSpaces } from "../../services/firebase/operations/spaces";
 import { getDaysList } from "../../services/firebase/operations/daysList";
 import { getHoursList } from "../../services/firebase/operations/hoursList";
 import { getTimeContraints } from "../../services/firebase/operations/timeConstraints";
+import { getSpaceContraints } from "../../services/firebase/operations/spaceConstraint";
 import { getBreakContraints } from "../../services/firebase/operations/breakConstraint";
 import {
   getInstitution,
@@ -44,6 +45,7 @@ export default () => {
   const [activeGenerateXML, setActiveGenerateXML] = useState(false);
   const [showSaveExcel, setShowSaveExcel] = useState(false);
   const [breakConstraints, setBreakConstraints] = useState([]);
+  const [spaceConstraints, setSpaceConstraints] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -59,6 +61,9 @@ export default () => {
         const hoursFetched = await getHoursList(plan ? plan : " ");
         const institutionFetched = await getInstitution();
         const commentsFetched = await getComments();
+        const spaceConstraintsFetched = await getSpaceContraints(
+          plan ? plan : ""
+        );
         const breakConstraintFetched = await getBreakContraints(
           plan ? plan : " "
         );
@@ -80,6 +85,7 @@ export default () => {
           commentsFetched,
           timeConstraintsFetched,
           breakConstraintFetched,
+          spaceConstraintsFetched,
         };
       } catch (error) {
         return error;
@@ -102,6 +108,7 @@ export default () => {
           commentsFetched,
           timeConstraintsFetched,
           breakConstraintFetched,
+          spaceConstraintsFetched,
         } = data;
 
         setData(
@@ -125,8 +132,11 @@ export default () => {
         setInstitution(institutionFetched.val());
         setComments(commentsFetched.val());
         setTimeConstraints(toArray(timeConstraintsFetched.val()));
-        if (breakConstraintFetched.val()) {
+        if (breakConstraintFetched.exists()) {
           setBreakConstraints(breakConstraintFetched.val());
+        }
+        if (spaceConstraintsFetched.exists()) {
+          setSpaceConstraints(toArray(spaceConstraintsFetched.val()));
         }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
@@ -189,6 +199,7 @@ ${generateBreakConstraintXML()}
 <Active>true</Active>
 <Comments></Comments>
 </ConstraintBasicCompulsorySpace>
+${generateSpaceConstraintsXML()}
 </Space_Constraints_List>
 
 
@@ -308,8 +319,6 @@ ${tags
           ).join("")
         : ""
     }
-    
-    
     </Qualified_Subjects>
     <Comments>${teacher.Comments}</Comments>
     </Teacher>`
@@ -347,13 +356,11 @@ ${
 <Number_of_Students>${sg.NumberOfStudents}</Number_of_Students>
 <Comments>${sg.Comments}</Comments>
 </Subgroup>
-
 `
       )
     : ""
 }
 </Group>
-
             `
                   )
                 : ""
@@ -411,15 +418,13 @@ ${rooms
   .map(
     (room) =>
       `<Room>
-            <Name>${room.Name}
-            </Name>
+            <Name>${room.Name}</Name>
             <Building>${
               buildings.find((b) => b.slug === room.Building).Name
             }</Building>
             <Capacity>${room.Capacity}</Capacity>
             <Virtual>false</Virtual>
-            <Comments>${room.Comments}
-            </Comments>
+            <Comments>${room.Comments}</Comments>
       </Room>`
   )
   .join("")}
@@ -449,6 +454,93 @@ ${rooms
     }
   };
 
+  const generateSpaceConstraintsXML = () => {
+    if (spaceConstraints.length) {
+      return spaceConstraints
+        .map((sc) => {
+          switch (sc.restrictionType) {
+            case "subject-room":
+              const subjectFound = subjects.find(
+                (subject) => subject.slug === sc.subject
+              );
+              const roomFound = rooms.find((room) => room.slug === sc.room);
+              return `
+<ConstraintSubjectPreferredRoom>
+<Weight_Percentage>100</Weight_Percentage>
+<Subject>${subjectFound.Name}</Subject>
+<Room>${roomFound.Name}</Room>
+<Active>true</Active>
+<Comments></Comments>
+</ConstraintSubjectPreferredRoom>
+            `;
+              break;
+            case "tag-room":
+              const tagFound = tags.find((tag) => tag.slug === sc.tag);
+              const roomFound1 = rooms.find((room) => room.slug === sc.room);
+              return `
+<ConstraintActivityTagPreferredRoom>
+<Weight_Percentage>100</Weight_Percentage>
+<Activity_Tag>${tagFound.Name}</Activity_Tag>
+<Room>${roomFound1.Name}</Room>
+<Active>true</Active>
+<Comments></Comments>
+</ConstraintActivityTagPreferredRoom>
+            `;
+              break;
+            case "subject-group":
+              const subjectFound1 = subjects.find(
+                (subject) => subject.slug === sc.subject
+              );
+              return `
+<ConstraintSubjectPreferredRooms>
+<Weight_Percentage>100</Weight_Percentage>
+<Subject>${subjectFound1.Name}</Subject>
+<Number_of_Preferred_Rooms>${
+                sc.preferredRooms.length
+              }</Number_of_Preferred_Rooms>
+${sc.preferredRooms
+  .map(
+    (r) =>
+      `<Preferred_Room>${
+        rooms.find((room) => room.slug === r).Name
+      }</Preferred_Room>`
+  )
+  .join("")}
+<Active>true</Active>
+<Comments></Comments>
+</ConstraintSubjectPreferredRooms>
+            `;
+              break;
+            case "tag-group":
+              const tagFound1 = tags.find((tag) => tag.slug === sc.tag);
+              return `
+<ConstraintActivityTagPreferredRooms>
+<Weight_Percentage>100</Weight_Percentage>
+<Activity_Tag>${tagFound1.Name}</Activity_Tag>
+<Number_of_Preferred_Rooms>${
+                sc.preferredRooms.length
+              }</Number_of_Preferred_Rooms>
+${sc.preferredRooms
+  .map(
+    (r) =>
+      `<Preferred_Room>${
+        rooms.find((room) => room.slug === r).Name
+      }</Preferred_Room>`
+  )
+  .join("")}
+<Active>true</Active>
+<Comments></Comments>
+</ConstraintActivityTagPreferredRooms>
+            `;
+              break;
+            default:
+          }
+        })
+        .join("");
+    }
+    return "";
+  };
+
   const showAllTimeTable = () => {
     setTypeOfTimeTable("ALL");
   };
@@ -469,6 +561,7 @@ ${rooms
 
           return { ...activity, firstTimeTable };
         });
+        console.log("att", allTimeTable);
 
         return (
           <Table striped bordered responsive>
@@ -509,6 +602,10 @@ ${rooms
                               ) : (
                                 ""
                               )}
+                              <div>
+                                {tt.firstTimeTable.Room &&
+                                  `(${tt.firstTimeTable.Room})`}
+                              </div>{" "}
                             </>
                           ) : (
                             ""

@@ -3,86 +3,39 @@ import { Card, Button, Modal, Form, Row, Col } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
 import { AuthContext } from "../../../App";
-import { RESTRICTION_TYPES } from "../../../constants/restrictionTypes";
-import { addTimeConstraintInput } from "../../../services/firebase/operations/timeConstraintsInput";
+import { addSpaceConstraint } from "../../../services/firebase/operations/spaceConstraint";
 
 export default ({
   show,
   handleClose,
-  day,
-  hour,
-  teacher,
   subject,
   room,
-  students,
-  activity,
   tag,
-  teachersList,
   subjectsList,
   roomsList,
-  studentsList,
-  activitiesList,
   tagsList,
 }) => {
   const { plan } = useContext(AuthContext);
 
-  console.log(studentsList);
-  const [selectedTeacher, setSelectedTeacher] = useState({});
   const [selectedSubject, setSelectedSubject] = useState({});
   const [selectedRoom, setSelectedRoom] = useState({});
-  const [selectedActivity, setSelectedActivity] = useState({});
   const [selectedTag, setSelectedTag] = useState({});
-  const [selectedStudents, setSelectedStudents] = useState({});
-
-  useEffect(() => {
-    const teacherFound = teachersList.find((t) => t.slug === teacher);
-    teacherFound && setSelectedTeacher(teacherFound);
-  }, [teacher]);
-
+  const [isSetOfRooms, setIsSetOfRooms] = useState(false);
+  const [selectedRestrictionType, setSelectedRestrictionType] = useState("");
+  const [selectedSetOfRooms, setSelectedSetOfRooms] = useState([]);
   useEffect(() => {
     const subjectFound = subjectsList.find((s) => s.slug === subject);
-    subjectFound && setSelectedSubject(subjectFound);
+    setSelectedSubject(subjectFound ? subjectFound : {});
   }, [subject]);
 
   useEffect(() => {
     const roomFound = roomsList.find((s) => s.slug === room);
-    roomFound && setSelectedRoom(roomFound);
+    setSelectedRoom(roomFound ? roomFound : {});
   }, [room]);
 
   useEffect(() => {
-    const studentsFound = studentsList.find((s) => s.slug === students);
-    console.log("selectedStudents", students);
-    studentsFound && setSelectedStudents(studentsFound);
-  }, [students]);
-
-  useEffect(() => {
-    const activityFound = activitiesList.find((a) => a.slug === activity);
-    if (activityFound) {
-      const subjectFound = subjectsList.find(
-        (s) => s.slug === activityFound.Subject
-      );
-      const teacherFound = teachersList.find(
-        (t) => t.slug === activityFound.Teacher
-      );
-      const studentsFound = studentsList.find(
-        (s) => s.slug === activityFound.Students
-      );
-
-      setSelectedActivity({
-        slug: activityFound.slug,
-        id: activityFound.id,
-        ActivityGroup: activityFound.ActivityGroup,
-        Duration: activityFound.Duration,
-        teacher: teacherFound,
-        subject: subjectFound,
-        students: studentsFound,
-      });
-    }
-  }, [activity]);
-
-  useEffect(() => {
     const tagFound = tagsList.find((t) => t.slug === tag);
-    tagFound && setSelectedTag(tagFound);
+    setSelectedTag(tagFound ? tagFound : {});
   }, [tag]);
 
   const renderConstraintTypes = () => {
@@ -91,7 +44,7 @@ export default ({
     if (selectedSubject.slug && selectedRoom.slug) {
       //TODO implement how to choose which rooms
       options.push(
-        <option>
+        <option value="subject-room">
           Materia ({selectedSubject.Name}) tiene un Aula preferida (
           {selectedRoom.Name})
         </option>
@@ -99,14 +52,14 @@ export default ({
     }
     if (selectedSubject.slug) {
       options.push(
-        <option>
+        <option value="subject-group">
           Materia ({selectedSubject.Name}) tiene un grupo de aulas preferidas
         </option>
       );
     }
     if (selectedTag.slug) {
       options.push(
-        <option>
+        <option value="tag-group">
           Categoría ({selectedTag.Name}) tiene un grupo de aulas preferidas
         </option>
       );
@@ -114,7 +67,7 @@ export default ({
     if (selectedTag.slug && selectedRoom.slug) {
       //TODO implement how to choose which rooms
       options.push(
-        <option>
+        <option value="tag-room">
           Categoría ({selectedTag.Name}) tiene un Aula preferida (
           {selectedRoom.Name})
         </option>
@@ -123,40 +76,98 @@ export default ({
     return options;
   };
 
+  useEffect(() => {
+    if (
+      selectedRestrictionType === "tag-group" ||
+      selectedRestrictionType === "subject-group"
+    ) {
+      setIsSetOfRooms(true);
+    }
+  }, [selectedRestrictionType]);
+
+  const handleSave = async () => {
+    const newItem = {
+      slug: generateUniqueKey(),
+      restrictionType: selectedRestrictionType,
+    };
+    switch (selectedRestrictionType) {
+      case "subject-room":
+        newItem.subject = selectedSubject.slug;
+        newItem.room = selectedRoom.slug;
+        break;
+      case "tag-room":
+        newItem.tag = selectedTag.slug;
+        newItem.room = selectedRoom.slug;
+        break;
+      case "subject-group":
+        if (selectedSetOfRooms.length) {
+          newItem.subject = selectedSubject.slug;
+
+          newItem.preferredRooms = selectedSetOfRooms;
+        } else {
+          newErrorToast(`Debe seleccionar un grupo de aulas.`);
+          return;
+        }
+        break;
+      case "tag-group":
+        if (selectedSetOfRooms.length) {
+          newItem.tag = selectedTag.slug;
+          newItem.preferredRooms = selectedSetOfRooms;
+        } else {
+          newErrorToast(`Debe seleccionar un grupo de aulas.`);
+          return;
+        }
+
+        break;
+      default:
+        break;
+    }
+    try {
+      await addSpaceConstraint(plan ? plan : " ", newItem.slug, newItem);
+      newSuccessToast(`Restricción de espacio agregada exitosamente`);
+      handleClose();
+    } catch (error) {
+      newErrorToast(`ERROR: ${error.message}`);
+    }
+  };
+
   return (
     <Modal show={show} onHide={handleClose} size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Agregar nueva Restricción</Modal.Title>
+        <Modal.Title>Agregar nueva Restricción de Espacio</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <Card.Body>
           <h3>Datos Seleccionados</h3>
-          <p>{`Profesor: ${
-            selectedTeacher.Name ? selectedTeacher.Name : ""
-          }`}</p>
+          {/* <p>{`Profesor: ${ */}
+          {/* selectedTeacher.Name ? selectedTeacher.Name : "" */}
+          {/* }`}</p> */}
           <p>{`Materia: ${
             selectedSubject.Name ? selectedSubject.Name : ""
           }`}</p>
           <p>{`Aula: ${selectedRoom.Name ? selectedRoom.Name : ""}`}</p>
-          <p>{`Estudiantes: ${
-            selectedStudents.Name ? selectedStudents.Name : ""
-          }`}</p>
+
+          {/* <p>{`Estudiantes: ${ */}
+          {/* selectedStudents.Name ? selectedStudents.Name : "" */}
+          {/* }`}</p> */}
           <p>{`Código: ${selectedTag.Name ? selectedTag.Name : ""}`}</p>
-          <p>
-            Actividad:
-            {selectedActivity.id
-              ? `id: ${selectedActivity.id} grupo: ${selectedActivity.ActivityGroup} duración: ${selectedActivity.Duration} | ${selectedActivity.teacher.Name}, ${selectedActivity.subject.Name}, ${selectedActivity.students.Name} `
-              : ""}
-          </p>
+          {/* <p> */}
+          {/* Actividad: */}
+          {/* {selectedActivity.id */}
+          {/* ? `id: ${selectedActivity.id} grupo: ${selectedActivity.ActivityGroup} duración: ${selectedActivity.Duration} | ${selectedActivity.teacher.Name}, ${selectedActivity.subject.Name}, ${selectedActivity.students.Name} ` */}
+          {/* : ""} */}
+          {/* </p> */}
           <Form.Group>
             <Form.Label>
               En base a lo seleccionado, puedes crear una de las siguientes
               restricciones
             </Form.Label>
             <Form.Control
-              value={selectedTeacher}
+              value={selectedRestrictionType}
               as="select"
-              onChange={(event) => setSelectedTeacher(event.target.value)}
+              onChange={(event) =>
+                setSelectedRestrictionType(event.target.value)
+              }
             >
               <option value="" disabled>
                 ---
@@ -164,8 +175,35 @@ export default ({
               {renderConstraintTypes()}
             </Form.Control>
           </Form.Group>
+          {isSetOfRooms && (
+            <Form.Group>
+              <Form.Label>
+                Seleccione las aulas para esta restricción
+              </Form.Label>
+              <Form.Control
+                as="select"
+                value={selectedSetOfRooms}
+                onChange={(event) =>
+                  setSelectedSetOfRooms(
+                    [...event.target.selectedOptions].map((opt) => opt.value)
+                  )
+                }
+                multiple
+              >
+                <option value="" disabled>
+                  ---
+                </option>
+                {roomsList.map((room) => (
+                  <option value={room.slug}>{room.Name}</option>
+                ))}
+              </Form.Control>
+            </Form.Group>
+          )}
         </Card.Body>
       </Modal.Body>
+      <Modal.Footer>
+        <Button onClick={handleSave}>Guardar</Button>
+      </Modal.Footer>
     </Modal>
   );
 };

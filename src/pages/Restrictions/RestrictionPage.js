@@ -23,6 +23,7 @@ import {
   addBreakConstraint,
   getBreakContraints,
   removeAllBreakContraints,
+  listenBreakContraints,
 } from "../../services/firebase/operations/breakConstraint";
 
 import "./RestrictionPage.css";
@@ -124,7 +125,16 @@ export default () => {
         setBreakValues(breakConstraintFetched.val());
       }
     });
+    listenBreakContraintsChange();
   }, []);
+
+  const listenBreakContraintsChange = () => {
+    listenBreakContraints(plan ? plan : " ", (breaks) => {
+      if (breaks.exists()) {
+        setBreakValues(breaks.val());
+      }
+    });
+  };
 
   useEffect(() => {
     setVisibleActivities(
@@ -168,6 +178,8 @@ export default () => {
       }
     } else {
       setShowRestrictionModal(true);
+      setSelectedHour(hour);
+      setSelectedDay(day);
     }
   };
 
@@ -190,10 +202,8 @@ export default () => {
     setIsAddingBreak(true);
   };
   const renderScheduleValue = ({ day, hour }) => {
-    if (isAddingBreak) {
-      if (breakValues.find((bv) => bv.day === day && bv.hour === hour)) {
-        return "--X--";
-      }
+    if (breakValues.find((bv) => bv.day === day && bv.hour === hour)) {
+      return "--RECESO--";
     }
     return "";
   };
@@ -208,6 +218,11 @@ export default () => {
       console.log(e);
       newErrorToast(`ERROR: ${e.message}`);
     }
+  };
+
+  const handleCloseSpaceModal = () => {
+    setNewShowRestrictionModal(false);
+    handleClear();
   };
 
   return (
@@ -392,10 +407,10 @@ export default () => {
               </Row>
             </Card.Body>
           </Card>
-          <Table striped bordered>
+          <Table striped bordered responsive>
             <thead>
               <tr>
-                <th></th>
+                <th style={{ minWidht: "20%" }}></th>
                 {days.Days_List && days.Days_List.map((day) => <th> {day}</th>)}
               </tr>
             </thead>
@@ -430,47 +445,13 @@ export default () => {
       />
       <NewRestrictionFormModal
         show={showNewRestrictionFormModal}
-        handleClose={() => setNewShowRestrictionModal(false)}
-        teacher={selectedTeacher}
+        handleClose={handleCloseSpaceModal}
         subject={selectedSubject}
         room={selectedRoom}
-        students={selectedStudents}
-        activity={selectedActivity}
         tag={selectedTag}
-        teachersList={teachers}
         roomsList={rooms}
-        activitiesList={activities}
         tagsList={tags}
         subjectsList={subjects}
-        studentsList={
-          students.length
-            ? students.reduce((acc, s) => {
-                if (s.groups) {
-                  const subgroupsList = s.groups.reduce((acc2, g) => {
-                    if (g.subgroups) {
-                      acc2 = acc2.concat(
-                        g.subgroups.map((sg) => ({
-                          slug: sg.Name,
-                          Name: sg.Name,
-                        }))
-                      );
-                    }
-                    acc2 = acc2.concat({
-                      slug: g.Name,
-                      Name: g.Name,
-                    });
-                    return acc2;
-                  }, []);
-                  acc = acc.concat(subgroupsList);
-                }
-                acc = acc.concat({
-                  slug: s.slug,
-                  Name: s.Name,
-                });
-                return acc;
-              }, [])
-            : []
-        }
       />
     </AdminLayout>
   );
