@@ -25,13 +25,16 @@ import {
   removeAllBreakContraints,
   listenBreakContraints,
 } from "../../services/firebase/operations/breakConstraint";
+import {
+  getTimeContraintsInput,
+  listentimeContraintsInput,
+} from "../../services/firebase/operations/timeConstraintsInput";
 
 import "./RestrictionPage.css";
 
 export default () => {
   const { plan } = useContext(AuthContext);
 
-  const [typeOfRestriction, setTypeOfRestriction] = useState("");
   const [hours, setHours] = useState({});
   const [days, setDays] = useState({});
   const [breakValues, setBreakValues] = useState([]);
@@ -54,7 +57,10 @@ export default () => {
   const [rooms, setRooms] = useState([]);
   const [tags, setTags] = useState([]);
   const [visibleActivities, setVisibleActivities] = useState([]);
+  const [activitiesValues, setActivitiesValues] = useState([]);
   const [isAddingBreak, setIsAddingBreak] = useState(false);
+  const [timeConstraints, setTimeConstraints] = useState([]);
+  const [timeConstraintsVisible, setTimeConstraintsVisible] = useState([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -67,6 +73,9 @@ export default () => {
         const activitiesFetched = await getActivities(plan ? plan : " ");
         const roomsFetched = await getSpaces(plan ? plan : " ", "rooms");
         const tagsFetched = await getTags(plan ? plan : " ");
+        const timeConstraintsFetched = await getTimeContraintsInput(
+          plan ? plan : " "
+        );
         const breakConstraintFetched = await getBreakContraints(
           plan ? plan : " "
         );
@@ -80,6 +89,7 @@ export default () => {
           roomsFetched,
           tagsFetched,
           breakConstraintFetched,
+          timeConstraintsFetched,
         };
       } catch (error) {
         return error;
@@ -96,6 +106,7 @@ export default () => {
         roomsFetched,
         tagsFetched,
         breakConstraintFetched,
+        timeConstraintsFetched,
       } = data;
       if (hoursFetched.exists()) {
         setHours(hoursFetched.val());
@@ -124,9 +135,47 @@ export default () => {
       if (breakConstraintFetched.exists()) {
         setBreakValues(breakConstraintFetched.val());
       }
+      if (timeConstraintsFetched.exists()) {
+        setTimeConstraints(toArray(timeConstraintsFetched.val()));
+        setTimeConstraintsVisible(toArray(timeConstraintsFetched.val()));
+      }
     });
     listenBreakContraintsChange();
+    listenTimeConstraintsInputChange();
   }, []);
+
+  useEffect(() => {
+    setActivitiesValues(
+      activities.map((activity) => {
+        const teacherFound = teachers.find(
+          (teacher) => teacher.slug === activity.Teacher
+        );
+        const subjectFound = subjects.find(
+          (subject) => subject.slug === activity.Subject
+        );
+        const studentsFound = students.find(
+          (student) => student.slug === activity.Students
+        );
+        return {
+          value: activity.slug,
+          label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+        };
+      })
+    );
+  }, [activities]);
+
+  const listenTimeConstraintsInputChange = () => {
+    listentimeContraintsInput(plan ? plan : " ", (data) => {
+      if (data.exists()) {
+        setTimeConstraints(toArray(data.val()));
+      }
+    });
+  };
+
+  useEffect(() => {
+    //TODO: add filters
+    setTimeConstraintsVisible(timeConstraints);
+  }, [timeConstraints]);
 
   const listenBreakContraintsChange = () => {
     listenBreakContraints(plan ? plan : " ", (breaks) => {
@@ -204,6 +253,33 @@ export default () => {
   const renderScheduleValue = ({ day, hour }) => {
     if (breakValues.find((bv) => bv.day === day && bv.hour === hour)) {
       return "--RECESO--";
+    } else {
+      const timeConstraintsFiltered = timeConstraintsVisible.filter(
+        (tc) => tc.day === day && tc.hour === hour
+      );
+      return timeConstraintsFiltered.map((tc) => {
+        if (tc.restrictionType === "teacher-not-available") {
+          const teacherFound = teachers.find(
+            (teacher) => teacher.slug === tc.teacher
+          );
+          return (
+            <p>{`Profesor no disponible: ${
+              teacherFound ? teacherFound.Name : ""
+            }`}</p>
+          );
+        }
+
+        if (tc.restrictionType === "activity-preferred-hour") {
+          const activityFound = activitiesValues.find(
+            (activity) => activity.value === tc.activity
+          );
+          return (
+            <p>{`Actividad hora preferida: ${
+              activityFound ? activityFound.label : ""
+            }`}</p>
+          );
+        }
+      });
     }
     return "";
   };
@@ -440,8 +516,24 @@ export default () => {
         handleClose={() => setShowRestrictionModal(false)}
         day={selectedDay}
         hour={selectedHour}
-        teacher={"teacherName"}
-        activity={"activityName"}
+        teacher={selectedTeacher}
+        activity={selectedActivity}
+        teachersList={teachers}
+        activitiesList={activities.map((activity) => {
+          const teacherFound = teachers.find(
+            (teacher) => teacher.slug === activity.Teacher
+          );
+          const subjectFound = subjects.find(
+            (subject) => subject.slug === activity.Subject
+          );
+          const studentsFound = students.find(
+            (student) => student.slug === activity.Students
+          );
+          return {
+            value: activity.slug,
+            label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+          };
+        })}
       />
       <NewRestrictionFormModal
         show={showNewRestrictionFormModal}

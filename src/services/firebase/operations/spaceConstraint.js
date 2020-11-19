@@ -5,6 +5,11 @@ export const addSpaceConstraint = (plan, slug, spaceConstraint) => {
   return SpaceContraintsRef.child(slug).update({ ...spaceConstraint });
 };
 
+export const removeSpaceConstraint = (plan, slug) => {
+  const SpaceContraintsRef = db.ref(`${plan}/spaceContraints`);
+  return SpaceContraintsRef.child(slug).remove();
+};
+
 export const removeAllSpaceContraints = (plan) => {
   const SpaceContraintsRef = db.ref(`${plan}/spaceContraints`);
   return SpaceContraintsRef.remove();

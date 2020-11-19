@@ -10,11 +10,15 @@ export const removeAlltimeContraintsInput = (plan) => {
   return timeContraintsInputRef.remove();
 };
 
-export const gettimeContraintsInput = (plan) => {
+export const getTimeContraintsInput = (plan) => {
   const timeContraintsInputRef = db.ref(`${plan}/timeContraintsInput`);
   return timeContraintsInputRef.once("value");
 };
 
+export const removeTimeConstriantInput = (plan, slug) => {
+  const timeContraintsInputRef = db.ref(`${plan}/timeContraintsInput`);
+  return timeContraintsInputRef.child(slug).remove();
+};
 export const listentimeContraintsInput = (plan, callbackFunction) => {
   const timeContraintsInputRef = db.ref(`${plan}/timeContraintsInput`);
   return timeContraintsInputRef.on("value", callbackFunction);
