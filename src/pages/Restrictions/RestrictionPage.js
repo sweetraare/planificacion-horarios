@@ -159,6 +159,9 @@ export default () => {
         return {
           value: activity.slug,
           label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+          teacher: teacherFound,
+          subject: subjectFound,
+          students: studentsFound,
         };
       })
     );
@@ -174,8 +177,54 @@ export default () => {
 
   useEffect(() => {
     //TODO: add filters
-    setTimeConstraintsVisible(timeConstraints);
-  }, [timeConstraints]);
+    const auxArray = timeConstraints.map((tc) => {
+      if (tc.restrictionType === "teacher-not-available") {
+        return tc;
+      }
+      if (tc.restrictionType === "activity-preferred-hour") {
+        console.log("activities", activities);
+        const activityFound = activities.find(
+          (activity) => activity.slug === tc.activity
+        );
+        if (activityFound) {
+          return {
+            ...tc,
+            teacher: activityFound.Teacher,
+            subject: activityFound.Subject,
+            students: activityFound.Students,
+          };
+        }
+        return tc;
+      }
+    });
+    console.log(
+      "aux",
+      auxArray,
+      selectedStudents,
+      auxArray.filter(
+        (tc) =>
+          (!selectedTeacher || tc.teacher === selectedTeacher) &&
+          (!selectedActivity || tc.activity === selectedActivity) &&
+          (!selectedSubject || tc.subject === selectedSubject) &&
+          (!selectedStudents || tc.students === selectedStudents)
+      )
+    );
+    setTimeConstraintsVisible(
+      auxArray.filter(
+        (tc) =>
+          (!selectedTeacher || tc.teacher === selectedTeacher) &&
+          (!selectedActivity || tc.activity === selectedActivity) &&
+          (!selectedSubject || tc.subject === selectedSubject) &&
+          (!selectedStudents || tc.students === selectedStudents)
+      )
+    );
+  }, [
+    timeConstraints,
+    selectedTeacher,
+    selectedActivity,
+    selectedSubject,
+    selectedStudents,
+  ]);
 
   const listenBreakContraintsChange = () => {
     listenBreakContraints(plan ? plan : " ", (breaks) => {
@@ -257,29 +306,35 @@ export default () => {
       const timeConstraintsFiltered = timeConstraintsVisible.filter(
         (tc) => tc.day === day && tc.hour === hour
       );
-      return timeConstraintsFiltered.map((tc) => {
-        if (tc.restrictionType === "teacher-not-available") {
-          const teacherFound = teachers.find(
-            (teacher) => teacher.slug === tc.teacher
-          );
-          return (
-            <p>{`Profesor no disponible: ${
-              teacherFound ? teacherFound.Name : ""
-            }`}</p>
-          );
-        }
+      return (
+        <ul>
+          {timeConstraintsFiltered.map((tc) => {
+            if (tc.restrictionType === "teacher-not-available") {
+              const teacherFound = teachers.find(
+                (teacher) => teacher.slug === tc.teacher
+              );
+              return (
+                <li>
+                  <b>Profesor no disponible:</b>
+                  {` ${teacherFound ? teacherFound.Name : ""}`}
+                </li>
+              );
+            }
 
-        if (tc.restrictionType === "activity-preferred-hour") {
-          const activityFound = activitiesValues.find(
-            (activity) => activity.value === tc.activity
-          );
-          return (
-            <p>{`Actividad hora preferida: ${
-              activityFound ? activityFound.label : ""
-            }`}</p>
-          );
-        }
-      });
+            if (tc.restrictionType === "activity-preferred-hour") {
+              const activityFound = activitiesValues.find(
+                (activity) => activity.value === tc.activity
+              );
+              return (
+                <li>
+                  <b>Actividad hora preferida:</b>
+                  {` ${activityFound ? activityFound.label : ""}`}
+                </li>
+              );
+            }
+          })}
+        </ul>
+      );
     }
     return "";
   };
@@ -486,8 +541,14 @@ export default () => {
           <Table striped bordered responsive>
             <thead>
               <tr>
-                <th style={{ minWidht: "20%" }}></th>
-                {days.Days_List && days.Days_List.map((day) => <th> {day}</th>)}
+                <th style={{ width: "10vw" }}></th>
+                {days.Days_List &&
+                  days.Days_List.map((day) => (
+                    <th style={{ width: `${90 / days.Days_List.length}vw` }}>
+                      {" "}
+                      {day}
+                    </th>
+                  ))}
               </tr>
             </thead>
             <tbody>

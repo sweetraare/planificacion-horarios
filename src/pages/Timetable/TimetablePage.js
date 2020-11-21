@@ -15,6 +15,7 @@ import { getDaysList } from "../../services/firebase/operations/daysList";
 import { getHoursList } from "../../services/firebase/operations/hoursList";
 import { getTimeContraints } from "../../services/firebase/operations/timeConstraints";
 import { getSpaceContraints } from "../../services/firebase/operations/spaceConstraint";
+import { getTimeContraintsInput } from "../../services/firebase/operations/timeConstraintsInput";
 import { getBreakContraints } from "../../services/firebase/operations/breakConstraint";
 import {
   getInstitution,
@@ -46,6 +47,8 @@ export default () => {
   const [showSaveExcel, setShowSaveExcel] = useState(false);
   const [breakConstraints, setBreakConstraints] = useState([]);
   const [spaceConstraints, setSpaceConstraints] = useState([]);
+  const [timeConstraintsInput, setTimeConstraintsInput] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -62,6 +65,9 @@ export default () => {
         const institutionFetched = await getInstitution();
         const commentsFetched = await getComments();
         const spaceConstraintsFetched = await getSpaceContraints(
+          plan ? plan : ""
+        );
+        const timeConstraintsInputFetched = await getTimeContraintsInput(
           plan ? plan : ""
         );
         const breakConstraintFetched = await getBreakContraints(
@@ -86,6 +92,7 @@ export default () => {
           timeConstraintsFetched,
           breakConstraintFetched,
           spaceConstraintsFetched,
+          timeConstraintsInputFetched,
         };
       } catch (error) {
         return error;
@@ -109,6 +116,7 @@ export default () => {
           timeConstraintsFetched,
           breakConstraintFetched,
           spaceConstraintsFetched,
+          timeConstraintsInputFetched,
         } = data;
 
         setData(
@@ -137,6 +145,9 @@ export default () => {
         }
         if (spaceConstraintsFetched.exists()) {
           setSpaceConstraints(toArray(spaceConstraintsFetched.val()));
+        }
+        if (timeConstraintsInputFetched.exists()) {
+          setTimeConstraintsInput(toArray(timeConstraintsInputFetched.val()));
         }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
@@ -191,6 +202,7 @@ ${generateRoomsListXML()}
 
 ${generateTimeConstraintsXML()}
 ${generateBreakConstraintXML()}
+${generateTimeConstraintsInputXML()}
 </Time_Constraints_List>
   
   <Space_Constraints_List>
@@ -217,6 +229,14 @@ ${generateSpaceConstraintsXML()}
         " http://64.227.56.89:8080/api/upload",
         formData
       );
+
+      console.log({ response });
+      if (response.data.status === "error") {
+        console.log("ERROR:", response.data.message);
+        setError(response.data.message);
+        return;
+      }
+      setError("");
 
       csv({
         noheader: false,
@@ -437,6 +457,83 @@ ${rooms
     ${timeConstraints.map((tc) => tc)}
     `;
   };
+
+  const generateTimeConstraintsInputXML = () => {
+    if (timeConstraintsInput.length) {
+      const teachersConstraints = timeConstraintsInput.filter(
+        (tc) => tc.restrictionType === "teacher-not-available"
+      );
+      const activitiesConstraints = timeConstraintsInput.filter(
+        (tc) => tc.restrictionType === "activity-preferred-hour"
+      );
+      const constraintsPerTeacher = teachersConstraints.reduce((acc, tc) => {
+        if (acc[tc.teacher]) {
+          acc[tc.teacher] = {
+            slug: tc.teacher,
+            constraints: acc[tc.teacher].constraints.concat(tc),
+          };
+        } else {
+          acc[tc.teacher] = { slug: tc.teacher, constraints: [tc] };
+        }
+        return acc;
+      }, {});
+      let response = "";
+      response += activitiesConstraints
+        .map((ac) => {
+          const activityFound = data.find(
+            (activity) => activity.slug === ac.activity
+          );
+          if (activityFound) {
+            return `<ConstraintActivityPreferredStartingTime>
+	<Weight_Percentage>100</Weight_Percentage>
+	<Activity_Id>${activityFound.id}</Activity_Id>
+	<Preferred_Day>${ac.day}</Preferred_Day>
+	<Preferred_Hour>${ac.hour}</Preferred_Hour>
+	<Permanently_Locked>false</Permanently_Locked>
+	<Active>true</Active>
+	<Comments></Comments>
+  </ConstraintActivityPreferredStartingTime>`;
+          }
+          return "";
+        })
+        .join("");
+
+      console.log(toArray(constraintsPerTeacher));
+
+      response += toArray(constraintsPerTeacher)
+        .map((cpt) => {
+          const teacherFound = teachers.find(
+            (teacher) => teacher.slug === cpt.slug
+          );
+          if (teacherFound) {
+            return `<ConstraintTeacherNotAvailableTimes>
+	<Weight_Percentage>100</Weight_Percentage>
+	<Teacher>${teacherFound.Name}</Teacher>
+	<Number_of_Not_Available_Times>${
+    cpt.constraints.length
+  }</Number_of_Not_Available_Times>
+${cpt.constraints
+  .map(
+    (constraint) => `
+	<Not_Available_Time>
+		<Day>${constraint.day}</Day>
+    <Hour>${constraint.hour}</Hour>
+	</Not_Available_Time>
+	`
+  )
+  .join("")}
+</ConstraintTeacherNotAvailableTimes>
+`;
+          }
+          return "";
+        })
+        .join("");
+
+      return response;
+    }
+    return "";
+  };
+
   const generateBreakConstraintXML = () => {
     if (breakConstraints.length) {
       return `
@@ -546,6 +643,14 @@ ${sc.preferredRooms
   };
 
   const generateTimeTable = () => {
+    if (error.length)
+      return (
+        <>
+          <h2>Ha existido un problema</h2>
+          <h4>A continuación se presenta el log generado por FET</h4>
+          <p>{error}</p>
+        </>
+      );
     switch (typeOfTimeTable) {
       case "ALL":
         const allTimeTable = data.map((activity) => {
