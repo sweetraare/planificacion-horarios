@@ -30,6 +30,11 @@ import {
   listentimeContraintsInput,
 } from "../../services/firebase/operations/timeConstraintsInput";
 
+import {
+  getTimeContraintsInput,
+  listentimeContraintsInput,
+} from "../../services/firebase/operations/timeConstraintsInput";
+
 import "./RestrictionPage.css";
 
 export default () => {
