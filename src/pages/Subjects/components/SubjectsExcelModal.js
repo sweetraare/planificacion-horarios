@@ -22,14 +22,14 @@ export default ({ show, handleClose }) => {
 
   const handleBulkData = (data) => {
     const dataValid = data
-      .filter((item) => item.nombre && item.comentario)
+      .filter((item) => item.nombre)
       .map((subject) => {
         const slug = generateUniqueKey();
 
         return {
           slug: slug,
           Name: subject.nombre,
-          Comments: subject.comentario,
+          Comments: subject.comentario ? subject.comentario : "",
         };
       });
     setTotalInserts(dataValid.length);

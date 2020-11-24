@@ -80,6 +80,7 @@ export default ({ show, handleClose, buildings }) => {
                 value={Building}
                 as="select"
                 onChange={(event) => setBuilding(event.target.value)}
+                required
               >
                 <option value="">----</option>
                 {buildings &&

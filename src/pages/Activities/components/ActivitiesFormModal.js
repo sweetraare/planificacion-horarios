@@ -5,6 +5,7 @@ import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
 import {
   addActivity,
   getActivities,
+  listenActivities,
 } from "../../../services/firebase/operations/activities";
 import { addTimeConstraint } from "../../../services/firebase/operations/timeConstraints";
 import { getTeachers } from "../../../services/firebase/operations/teachers";
@@ -103,6 +104,7 @@ export default ({ show, handleClose, action, tag }) => {
         }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
+    listenActivitiesChange();
   }, []);
 
   useEffect(() => {
@@ -112,6 +114,14 @@ export default ({ show, handleClose, action, tag }) => {
     );
     setMaxID(maxIDObject ? maxIDObject.id : 0);
   }, [activities]);
+
+  const listenActivitiesChange = () => {
+    listenActivities(plan ? plan : " ", (activities) => {
+      if (activities.exists()) {
+        setActivities(toArray(activities.val()));
+      }
+    });
+  };
 
   const clearVariables = () => {
     setVisibleTeachers(Teachers);
@@ -193,11 +203,12 @@ export default ({ show, handleClose, action, tag }) => {
           });
 
           await addTimeConstraint(plan ? plan : " ", newTimeContraint);
-          newSuccessToast(`Actividad ingresada exitosamente`);
         } else {
           newErrorToast(`Alguna duración no está definida`);
         }
       }
+      newSuccessToast(`Actividad ingresada exitosamente`);
+      clearVariables();
     } catch (error) {
       newErrorToast(`ERROR: ${error.message}`);
     }

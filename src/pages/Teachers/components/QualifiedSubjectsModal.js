@@ -91,7 +91,11 @@ export default ({ show, handleClose, subjects, teacher }) => {
   useEffect(() => {
     if (search) {
       setAvaibleSubjects(
-        subjects.filter((subject) => subject.Name.includes(search))
+        subjects.filter(
+          (subject) =>
+            subject.Name.toUpperCase().includes(search.toUpperCase()) &&
+            !QualifiedSubjects.includes(subject.slug)
+        )
       );
     } else {
       setAvaibleSubjects(subjects);

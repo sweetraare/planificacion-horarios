@@ -26,14 +26,14 @@ export default ({ show, handleClose }) => {
 
   const handleBulkData = (data) => {
     const dataValid = data
-      .filter((item) => item.nombre && item.comentario)
+      .filter((item) => item.nombre)
       .map((teacher) => {
         const slug = generateUniqueKey();
 
         return {
           slug,
           Name: teacher.nombre,
-          Comments: teacher.comentario,
+          Comments: teacher.comentario ? teacher.comentario : "",
           TargetNumberOfHours: teacher.horas ? teacher.horas : 0,
         };
       });
