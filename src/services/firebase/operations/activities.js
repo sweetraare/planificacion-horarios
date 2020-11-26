@@ -10,6 +10,11 @@ export const removeAllActivities = (plan) => {
   return ActivitiesRef.remove();
 };
 
+export const removeActivity = (plan, slug) => {
+  const ActivitiesRef = db.ref(`${plan}/activities`);
+  return ActivitiesRef.child(slug).remove();
+};
+
 export const getActivities = (plan) => {
   const ActivitiesRef = db.ref(`${plan}/activities`);
   return ActivitiesRef.once("value");

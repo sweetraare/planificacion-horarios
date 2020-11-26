@@ -4,6 +4,7 @@ import { AuthContext } from "../../App";
 import {
   getActivities,
   listenActivities,
+  removeActivity,
 } from "../../services/firebase/operations/activities";
 import toArray from "lodash/toArray";
 import { newErrorToast } from "../../utils/toasts";
@@ -87,13 +88,35 @@ export default () => {
         } = data;
         if (activitiesFetched.exists()) {
           setData(
-            toArray(activitiesFetched.val()).map((activity) => ({
-              ...activity,
-              Students: studentsFetched.val()[activity.Students],
-              Tag: tagsFetched.val()[activity.Tag],
-              Teacher: teachersFetched.val()[activity.Teacher],
-              Subject: subjectsFetched.val()[activity.Subject],
-            }))
+            toArray(activitiesFetched.val()).map((activity) => {
+              const allStudents = toArray(studentsFetched.val()).reduce(
+                (acc, s) => {
+                  if (s.groups) {
+                    acc = acc.concat(s.groups);
+                    s.groups.forEach((g) => {
+                      if (g.subgroups) {
+                        acc = acc.concat(g.subgroups);
+                      }
+                    });
+                  }
+
+                  acc = acc.concat(s);
+
+                  return acc;
+                },
+                []
+              );
+              const studentsList = allStudents.filter((as) =>
+                activity.Students.includes(as.slug)
+              );
+              return {
+                ...activity,
+                Students: studentsList,
+                Tag: tagsFetched.val()[activity.Tag],
+                Teacher: teachersFetched.val()[activity.Teacher],
+                Subject: subjectsFetched.val()[activity.Subject],
+              };
+            })
           );
         }
         setStudents(toArray(studentsFetched.val()));
@@ -115,10 +138,29 @@ export default () => {
       if (data.exists()) {
         setData(
           toArray(data.val()).map((activity) => {
-            console.log({ students, tags, teachers, subjects });
+            const allStudents = toArray(studentsFetched.val()).reduce(
+              (acc, s) => {
+                if (s.groups) {
+                  acc = acc.concat(s.groups);
+                  s.groups.forEach((g) => {
+                    if (g.subgroups) {
+                      acc = acc.concat(g.subgroups);
+                    }
+                  });
+                }
+
+                acc = acc.concat(s);
+
+                return acc;
+              },
+              []
+            );
+            const studentsList = allStudents.filter((as) =>
+              activity.Students.includes(as.slug)
+            );
             return {
               ...activity,
-              Students: studentsFetched.val()[activity.Students],
+              Students: studentsList,
               Tag: tagsFetched.val()[activity.Tag],
               Teacher: teachersFetched.val()[activity.Teacher],
               Subject: subjectsFetched.val()[activity.Subject],
@@ -127,6 +169,15 @@ export default () => {
         );
       }
     });
+  };
+
+  const handleDeleteActivity = async (activity) => {
+    try {
+      await removeActivity(plan ? plan : " ", activity.slug);
+    } catch (error) {
+      console.log(error);
+      newErrorToast(`ERROR: ${error.message}`);
+    }
   };
 
   return (
@@ -160,6 +211,7 @@ export default () => {
                   },
                   {
                     text: "Profesor",
+                    sort: true,
                     dataField: "Teacher",
                     filter: textFilter({ placeholder: "Buscar" }),
                     formatter: (cell) => cell && cell.Name,
@@ -171,6 +223,7 @@ export default () => {
                   {
                     text: "Materia",
                     dataField: "Subject",
+                    sort: true,
                     formatter: (cell) => cell && cell.Name,
                     align: "center",
                     headerStyle: {
@@ -180,8 +233,9 @@ export default () => {
                   },
                   {
                     text: "Estudiantes",
+                    sort: true,
                     dataField: "Students",
-                    formatter: (cell) => cell && cell.Name,
+                    formatter: (cell) => cell.map((s) => s.Name).join(","),
                     align: "center",
                     headerStyle: {
                       textAlign: "center",
@@ -190,6 +244,7 @@ export default () => {
                   },
                   {
                     text: "Código Actividad",
+                    sort: true,
                     dataField: "Tag",
                     formatter: (cell) => cell && cell.Name,
                     align: "center",
@@ -223,6 +278,21 @@ export default () => {
                     headerStyle: {
                       textAlign: "center",
                       verticalAlign: "middle",
+                    },
+                  },
+                  {
+                    text: "Acciones",
+                    dataField: "",
+                    formatter: (cell, row) => {
+                      return (
+                        <Button
+                          className="btn-sm"
+                          variant="outline-danger"
+                          onClick={() => handleDeleteActivity(row)}
+                        >
+                          Eliminar
+                        </Button>
+                      );
                     },
                   },
                 ]}

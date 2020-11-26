@@ -178,12 +178,13 @@ export default () => {
         const subjectFound = subjects.find(
           (subject) => subject.slug === activity.Subject
         );
-        const studentsFound = students.find(
-          (student) => student.slug === activity.Students
-        );
+        const studentsFound = students
+          .filter((student) => activity.Students.includes(student.slug))
+          .map((s) => s.Name)
+          .join(";");
         return {
           value: activity.slug,
-          label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+          label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound} `,
           teacher: teacherFound,
           subject: subjectFound,
           students: studentsFound,
@@ -207,7 +208,6 @@ export default () => {
         return tc;
       }
       if (tc.restrictionType === "activity-preferred-hour") {
-        console.log("activities", activities);
         const activityFound = activities.find(
           (activity) => activity.slug === tc.activity
         );
@@ -222,18 +222,7 @@ export default () => {
         return tc;
       }
     });
-    console.log(
-      "aux",
-      auxArray,
-      selectedStudents,
-      auxArray.filter(
-        (tc) =>
-          (!selectedTeacher || tc.teacher === selectedTeacher) &&
-          (!selectedActivity || tc.activity === selectedActivity) &&
-          (!selectedSubject || tc.subject === selectedSubject) &&
-          (!selectedStudents || tc.students === selectedStudents)
-      )
-    );
+
     setTimeConstraintsVisible(
       auxArray.filter(
         (tc) =>
@@ -275,12 +264,13 @@ export default () => {
           const subjectFound = subjects.find(
             (subject) => subject.slug === activity.Subject
           );
-          const studentsFound = students.find(
-            (student) => student.slug === activity.Students
-          );
+          const studentsFound = students
+            .filter((student) => activity.Students.includes(student.slug))
+            .map((s) => s.Name)
+            .join(";");
           return {
             value: activity.slug,
-            label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+            label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound} `,
           };
         })
     );
@@ -288,7 +278,6 @@ export default () => {
 
   const handleSelectTime = ({ day, hour }) => {
     if (isAddingBreak) {
-      console.log({ day, hour, breakValues });
       const breakValueFound = breakValues.find(
         (bv) => bv.day === day && bv.hour === hour
       );
@@ -612,13 +601,13 @@ export default () => {
           const subjectFound = subjects.find(
             (subject) => subject.slug === activity.Subject
           );
-          const studentsFound = students.find(
-            (student) => student.slug === activity.Students
-          );
-          console.log({ teacherFound, subjectFound, studentsFound });
+          const studentsFound = students
+            .filter((student) => activity.Students.includes(student.slug))
+            .map((s) => s.Name)
+            .join(";");
           return {
             value: activity.slug,
-            label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
+            label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | P: ${teacherFound.Name}, M: ${subjectFound.Name}, E: ${studentsFound} `,
           };
         })}
       />

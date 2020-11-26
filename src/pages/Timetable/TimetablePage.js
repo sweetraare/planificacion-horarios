@@ -23,6 +23,7 @@ import {
 } from "../../services/firebase/operations/institution";
 import axios from "axios";
 import csv from "csvtojson";
+import XLSX from "xlsx";
 
 export default () => {
   const { plan } = useContext(AuthContext);
@@ -39,7 +40,6 @@ export default () => {
   const [institution, setInstitution] = useState({});
   const [comments, setComments] = useState({});
   const [timeConstraints, setTimeConstraints] = useState([]);
-  const [XML, setXML] = useState("");
   const [timeTable, setTimeTable] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
   const [typeOfTimeTable, setTypeOfTimeTable] = useState("");
@@ -120,13 +120,36 @@ export default () => {
         } = data;
 
         setData(
-          toArray(activitiesFetched.val()).map((act) => ({
-            ...act,
-            Teacher: teachersFetched.val()[act.Teacher].Name,
-            Subject: subjectsFetched.val()[act.Subject].Name,
-            Tag: tagsFetched.val()[act.Tag].Name,
-            Students: act.Students,
-          }))
+          toArray(activitiesFetched.val()).map((act) => {
+            const allStudents = toArray(studentsFetched.val()).reduce(
+              (acc, s) => {
+                if (s.groups) {
+                  acc = acc.concat(s.groups);
+                  s.groups.forEach((g) => {
+                    if (g.subgroups) {
+                      acc = acc.concat(g.subgroups);
+                    }
+                  });
+                }
+
+                acc = acc.concat(s);
+
+                return acc;
+              },
+              []
+            );
+            const studentsList = allStudents.filter((as) =>
+              act.Students.includes(as.slug)
+            );
+
+            return {
+              ...act,
+              Teacher: teachersFetched.val()[act.Teacher].Name,
+              Subject: subjectsFetched.val()[act.Subject].Name,
+              Tag: tagsFetched.val()[act.Tag].Name,
+              Students: studentsList,
+            };
+          })
         );
 
         setSubjects(toArray(subjectsFetched.val()));
@@ -230,7 +253,6 @@ ${generateSpaceConstraintsXML()}
         formData
       );
 
-      console.log({ response });
       if (response.data.status === "error") {
         console.log("ERROR:", response.data.message);
         setError(response.data.message);
@@ -243,8 +265,6 @@ ${generateSpaceConstraintsXML()}
       })
         .fromString(response.data)
         .then((csv) => {
-          console.log("csv:", csv);
-          console.log("data:", data);
           const newTimeTable = csv.map((c) => {
             const activityFound = data.find(
               (activity) => activity.id === +c["Activity Id"]
@@ -260,8 +280,6 @@ ${generateSpaceConstraintsXML()}
           setShowButtons(true);
         })
         .catch((e) => console.log(e));
-
-      setXML(response.data);
     } catch (error) {
       return error;
     }
@@ -503,8 +521,6 @@ ${rooms
         })
         .join("");
 
-      console.log(toArray(constraintsPerTeacher));
-
       response += toArray(constraintsPerTeacher)
         .map((cpt) => {
           const teacherFound = teachers.find(
@@ -671,17 +687,19 @@ ${sc.preferredRooms
 
           return { ...activity, firstTimeTable };
         });
-        console.log("att", allTimeTable);
 
         return (
           <Table striped bordered responsive>
             <thead>
               <tr>
-                <th>Profesor</th>
-                <th>Materia</th>
-                <th>Estudiantes</th>
-                <th>Duración</th>
-                {days.Days_List && days.Days_List.map((day) => <th>{day}</th>)}
+                <th style={{ width: "20vw" }}>Profesor</th>
+                <th style={{ width: "20vw" }}>Materia</th>
+                <th style={{ width: "20vw" }}>Estudiantes</th>
+                <th style={{ width: "20vw" }}>Duración</th>
+                {days.Days_List &&
+                  days.Days_List.map((day) => (
+                    <th style={{ width: "20vw" }}>{day}</th>
+                  ))}
               </tr>
             </thead>
             <tbody>
@@ -689,7 +707,7 @@ ${sc.preferredRooms
                 <tr>
                   <td>{tt.Teacher}</td>
                   <td>{tt.Subject}</td>
-                  <td>{tt.Students}</td>
+                  <td>{`${tt.Students.map((s) => s.Name).join(",")}`}</td>
                   <td>{tt.Duration}</td>
                   {days.Days_List &&
                     days.Days_List.map((day, index) => {
@@ -733,6 +751,56 @@ ${sc.preferredRooms
         return null;
     }
   };
+
+  const handleSaveToExcel = () => {
+    const fileName = "horarios.xlsx";
+    const dataSheet = [];
+    const allTimeTable = data.map((activity) => {
+      const activityTimeTables = [...timeTable].filter(
+        (t) => +t["Activity Id"] === activity.id
+      );
+
+      const firstTimeTable = orderBy(
+        activityTimeTables,
+        ["hourIndex"],
+        ["asc"]
+      )[0];
+
+      return { ...activity, firstTimeTable };
+    });
+
+    console.log(allTimeTable);
+
+    allTimeTable.forEach((tt) => {
+      let newRow = {};
+      newRow["Profesor"] = tt.Teacher;
+      newRow["Materia"] = tt.Subject;
+      newRow["Estudiantes"] = tt.Students.map((s) => s.Name).join(",");
+      newRow["Duración"] = tt.Duration;
+
+      {
+        days.Days_List &&
+          days.Days_List.forEach((day, index) => {
+            newRow[day] =
+              day === tt.firstTimeTable.Day
+                ? `${tt.firstTimeTable.Hour}\n ${
+                    tt.Duration > 1
+                      ? hours.Hours_List[
+                          tt.firstTimeTable.hourIndex + tt.Duration - 1
+                        ]
+                      : ""
+                  } ${tt.firstTimeTable.Room && tt.firstTimeTable.Room}`
+                : "";
+          });
+      }
+      dataSheet.push(newRow);
+    });
+    const ws = XLSX.utils.json_to_sheet(dataSheet);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Horario");
+    XLSX.writeFile(wb, fileName);
+  };
+
   return (
     <AdminLayout>
       <h1>Horario</h1>
@@ -745,6 +813,7 @@ ${sc.preferredRooms
             <>
               <Button> Horario Profesores</Button>
               <Button onClick={showAllTimeTable}> Todos los horarios </Button>
+              <Button onClick={handleSaveToExcel}>Descargar Excel</Button>
             </>
           ) : null}
           {generateTimeTable()}
