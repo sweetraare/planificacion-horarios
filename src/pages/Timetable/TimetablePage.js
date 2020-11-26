@@ -125,7 +125,7 @@ export default () => {
             Teacher: teachersFetched.val()[act.Teacher].Name,
             Subject: subjectsFetched.val()[act.Subject].Name,
             Tag: tagsFetched.val()[act.Tag].Name,
-            Students: studentsFetched.val()[act.Students].Name,
+            Students: act.Students,
           }))
         );
 
@@ -393,7 +393,6 @@ ${
   };
 
   const generateActivitiesListXML = () => {
-    //TODO add number of students
     return `
 <Activities_List>
 ${data
@@ -403,7 +402,13 @@ ${data
           <Teacher>${activity.Teacher}</Teacher>
           <Subject>${activity.Subject}</Subject>
           <Activity_Tag>${activity.Tag}</Activity_Tag>
-          <Students>${activity.Students}</Students>
+${activity.Students.map((s) => {
+  const studentFound = students.find((st) => st.slug === s);
+  if (studentFound) {
+    return `<Students>${studentFound.Name}</Students>`;
+  }
+  return "";
+}).join("")}
           <Duration>${activity.Duration}</Duration>
           <Total_Duration>${activity.TotalDuration}</Total_Duration>
           <Id>${activity.id}</Id>

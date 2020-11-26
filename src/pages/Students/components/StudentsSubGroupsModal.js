@@ -13,6 +13,7 @@ import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
 import { editStudentProperty } from "../../../services/firebase/operations/students";
 import { AuthContext } from "../../../App";
 import "./StudentsGroupModal.css";
+import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 
 export default ({ show, handleClose, student }) => {
   const { plan } = useContext(AuthContext);
@@ -32,7 +33,12 @@ export default ({ show, handleClose, student }) => {
   const handleChangeGroup = (subgroupIndex, groupIndex) => {
     const groupsCopy = [...groups];
     const subgroupsCopy = groupsCopy[groupIndex].subgroups;
-    subgroupsCopy[subgroupIndex] = { Name, NumberOfStudents, Comments };
+    subgroupsCopy[subgroupIndex] = {
+      ...subgroupsCopy[subgroupIndex],
+      Name,
+      NumberOfStudents,
+      Comments,
+    };
     groupsCopy[groupIndex].subgroups = subgroupsCopy;
     setGroups(groupsCopy);
     setName("");
@@ -43,7 +49,12 @@ export default ({ show, handleClose, student }) => {
 
   const handleAddNew = (group, index) => {
     const subgroupsCopy = group.subgroups ? group.subgroups : [];
-    subgroupsCopy.push({ Name, Comments, NumberOfStudents });
+    subgroupsCopy.push({
+      Name,
+      Comments,
+      NumberOfStudents,
+      slug: generateUniqueKey(),
+    });
 
     const groupsCopy = [...groups];
     groupsCopy[index].subgroups = subgroupsCopy;

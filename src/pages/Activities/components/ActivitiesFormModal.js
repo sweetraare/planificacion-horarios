@@ -33,9 +33,9 @@ export default ({ show, handleClose, action, tag }) => {
   const [visibleStudents, setVisibleStudents] = useState([]);
   const [visibleSubjects, setVisibleSubjects] = useState([]);
   const [visibleTags, setVisibleTags] = useState([]);
-  // const [Subjects, setSubjects] = useState([]);
+
   const [Teacher, setTeacher] = useState({});
-  const [Student, setStudent] = useState({});
+  const [Student, setStudent] = useState([]);
   const [Tag, setTag] = useState({});
   const [Subject, setSubject] = useState({});
   // search variables
@@ -48,7 +48,6 @@ export default ({ show, handleClose, action, tag }) => {
   const [minDays, setMinDays] = useState(1);
   const [consecutive, setConsecutive] = useState(true);
   const [splitList, setSplitList] = useState([]);
-  const [maxID, setMaxID] = useState(0);
 
   const [split, setSplit] = useState(1);
   //use effect to charge all lists
@@ -107,14 +106,6 @@ export default ({ show, handleClose, action, tag }) => {
     listenActivitiesChange();
   }, []);
 
-  useEffect(() => {
-    const maxIDObject = activities.reduce(
-      (a, b) => (a ? (a.id > b.id ? a : b) : b),
-      null
-    );
-    setMaxID(maxIDObject ? maxIDObject.id : 0);
-  }, [activities]);
-
   const listenActivitiesChange = () => {
     listenActivities(plan ? plan : " ", (activities) => {
       if (activities.exists()) {
@@ -124,12 +115,13 @@ export default ({ show, handleClose, action, tag }) => {
   };
 
   const clearVariables = () => {
+    console.log("si estoy limoiando ");
     setVisibleTeachers(Teachers);
     setVisibleStudents(Students);
     setVisibleSubjects(Subjects);
     setVisibleTags(Tags);
     setTeacher({});
-    setStudent({});
+    setStudent([]);
     setTag({});
     setSubject({});
     setSearchTeacher("");
@@ -140,7 +132,6 @@ export default ({ show, handleClose, action, tag }) => {
     setMinDays(1);
     setConsecutive(true);
     setSplitList([]);
-    setMaxID(0);
     setSplit(1);
   };
 
@@ -150,17 +141,24 @@ export default ({ show, handleClose, action, tag }) => {
         isEmpty(Teacher) ||
         isEmpty(Subject) ||
         isEmpty(Tag) ||
-        isEmpty(Student)
+        !Student.length
       ) {
         newErrorToast(`Uno de los campos no se ha seleccionado`);
         return;
       }
+
+      const maxIDObject = activities.reduce(
+        (a, b) => (a ? (a.id > b.id ? a : b) : b),
+        null
+      );
+      const maxID = maxIDObject ? maxIDObject.id : 0;
+
       const newActivity = {
         slug: generateUniqueKey(),
         Teacher: Teacher.slug,
         Subject: Subject.slug,
         Tag: Tag.slug,
-        Students: Student.slug,
+        Students: Student.map((s) => s.slug),
         Active: true,
         id: maxID + 1,
       };
@@ -191,7 +189,7 @@ export default ({ show, handleClose, action, tag }) => {
               Teacher: Teacher.slug,
               Subject: Subject.slug,
               Tag: Tag.slug,
-              Students: Student.slug,
+              Students: Student.map((student) => student.slug),
               Active: true,
               Duration: s,
               TotalDuration: totalDuration,
@@ -217,7 +215,11 @@ export default ({ show, handleClose, action, tag }) => {
   useEffect(() => {
     switch (studentsType) {
       case "year":
-        setVisibleStudents(Students);
+        setVisibleStudents(
+          Students.filter((student) =>
+            student.Name.toUpperCase().includes(searchStudent.toUpperCase())
+          )
+        );
         break;
       case "group":
         setVisibleStudents(
@@ -228,7 +230,9 @@ export default ({ show, handleClose, action, tag }) => {
               );
             }
             return acc;
-          }, [])
+          }, []).filter((student) =>
+            student.Name.toUpperCase().includes(searchStudent.toUpperCase())
+          )
         );
         break;
       case "subgroup":
@@ -242,24 +246,28 @@ export default ({ show, handleClose, action, tag }) => {
         }, []);
 
         setVisibleStudents(
-          subgroupsList.reduce((acc, g) => {
-            if (g.subgroups) {
-              acc = acc.concat(
-                g.subgroups.map((sg) => ({
-                  ...sg,
-                  Name: `${g.Name} | ${sg.Name}`,
-                }))
-              );
-            }
-            return acc;
-          }, [])
+          subgroupsList
+            .reduce((acc, g) => {
+              if (g.subgroups) {
+                acc = acc.concat(
+                  g.subgroups.map((sg) => ({
+                    ...sg,
+                    Name: `${g.Name} | ${sg.Name}`,
+                  }))
+                );
+              }
+              return acc;
+            }, [])
+            .filter((student) =>
+              student.Name.toUpperCase().includes(searchStudent.toUpperCase())
+            )
         );
 
         break;
 
       default:
     }
-  }, [studentsType]);
+  }, [studentsType, searchStudent]);
 
   const handleSelect = (set, value) => {
     set(value);
@@ -299,6 +307,36 @@ export default ({ show, handleClose, action, tag }) => {
     splitListCopy[index] = +value;
 
     setSplitList(splitListCopy);
+  };
+
+  //Filters
+
+  useEffect(() => {
+    setVisibleTeachers(
+      Teachers.filter((teacher) =>
+        teacher.Name.toUpperCase().includes(searchTeacher.toUpperCase())
+      )
+    );
+  }, [searchTeacher]);
+
+  useEffect(() => {
+    setVisibleTags(
+      Tags.filter((tag) =>
+        tag.Name.toUpperCase().includes(searchTag.toUpperCase())
+      )
+    );
+  }, [searchTag]);
+
+  useEffect(() => {
+    setVisibleSubjects(
+      Subjects.filter((subject) =>
+        subject.Name.toUpperCase().includes(searchSubject.toUpperCase())
+      )
+    );
+  }, [searchSubject]);
+
+  const handleSetStudent = (student) => {
+    setStudent(Student.concat(student));
   };
 
   return (
@@ -370,7 +408,7 @@ export default ({ show, handleClose, action, tag }) => {
                 {visibleStudents.map((student) => (
                   <div
                     className="item-name"
-                    onClick={() => handleSelect(setStudent, student)}
+                    onClick={() => handleSetStudent(student)}
                   >
                     {student.Name}
                   </div>
@@ -406,7 +444,7 @@ export default ({ show, handleClose, action, tag }) => {
                   <Form.Control
                     name="name"
                     type="text"
-                    value={Teacher.Name}
+                    value={Teacher.Name ? Teacher.Name : ""}
                     readOnly
                   />
                 </Col>
@@ -419,7 +457,7 @@ export default ({ show, handleClose, action, tag }) => {
                   <Form.Control
                     name="name"
                     type="text"
-                    value={Tag.Name}
+                    value={Tag.Name ? Tag.Name : ""}
                     readOnly
                   />
                 </Col>
@@ -432,8 +470,10 @@ export default ({ show, handleClose, action, tag }) => {
                   <Form.Control
                     name="name"
                     type="text"
-                    value={Student.Name}
+                    as="textarea"
+                    value={Student.map((s) => s.Name).join("\n")}
                     readOnly
+                    rows={3}
                   />
                 </Col>
               </Form.Group>
@@ -445,7 +485,7 @@ export default ({ show, handleClose, action, tag }) => {
                   <Form.Control
                     name="name"
                     type="text"
-                    value={Subject.Name}
+                    value={Subject.Name ? Subject.Name : ""}
                     readOnly
                   />
                 </Col>
@@ -537,6 +577,7 @@ export default ({ show, handleClose, action, tag }) => {
         </Row>
       </Modal.Body>
       <Modal.Footer>
+        <Button onClick={clearVariables}>Limpiar</Button>
         <Button onClick={handleSave} variant="primary">
           Guardar
         </Button>

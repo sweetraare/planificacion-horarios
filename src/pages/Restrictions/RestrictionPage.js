@@ -114,22 +114,48 @@ export default () => {
         setDays(daysFetched.val());
       }
       if (teachersFetched.exists()) {
-        setTeachers(toArray(teachersFetched.val()));
+        setTeachers(orderBy(toArray(teachersFetched.val()), ["Name"], ["asc"]));
       }
       if (subjectsFetched.exists()) {
-        setSubjects(toArray(subjectsFetched.val()));
+        setSubjects(orderBy(toArray(subjectsFetched.val()), ["Name"], ["asc"]));
       }
       if (studentsFetched.exists()) {
-        setStudents(toArray(studentsFetched.val()));
+        setStudents(
+          orderBy(
+            toArray(studentsFetched.val()).reduce((acc, s) => {
+              if (s.groups) {
+                acc = acc.concat(
+                  s.groups.map((g) => ({ ...g, Name: `${g.Name} | ${s.Name}` }))
+                );
+                s.groups.forEach((g) => {
+                  if (g.subgroups) {
+                    acc = acc.concat(
+                      g.subgroups.map((sg) => ({
+                        ...sg,
+                        Name: `${sg.Name} | ${g.Name} | ${s.Name}`,
+                      }))
+                    );
+                  }
+                });
+              }
+              acc = acc.concat({ ...s });
+              return acc;
+            }, []),
+            ["Name"],
+            ["asc"]
+          )
+        );
       }
       if (activitiesFetched.exists()) {
-        setActivities(toArray(activitiesFetched.val()));
+        setActivities(
+          orderBy(toArray(activitiesFetched.val()), ["id"], ["asc"])
+        );
       }
       if (roomsFetched.exists()) {
-        setRooms(toArray(roomsFetched.val()));
+        setRooms(orderBy(toArray(roomsFetched.val()), ["Name"], ["asc"]));
       }
       if (tagsFetched.exists()) {
-        setTags(toArray(tagsFetched.val()));
+        setTags(orderBy(toArray(tagsFetched.val()), ["Name"], ["asc"]));
       }
       if (breakConstraintFetched.exists()) {
         setBreakValues(breakConstraintFetched.val());
@@ -589,6 +615,7 @@ export default () => {
           const studentsFound = students.find(
             (student) => student.slug === activity.Students
           );
+          console.log({ teacherFound, subjectFound, studentsFound });
           return {
             value: activity.slug,
             label: `id: ${activity.id} grupo: ${activity.ActivityGroup} duración: ${activity.Duration} | ${teacherFound.Name}, ${subjectFound.Name}, ${studentsFound.Name} `,
