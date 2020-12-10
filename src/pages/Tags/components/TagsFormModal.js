@@ -2,20 +2,60 @@ import React, { useContext, useEffect, useState } from "react";
 import { Button, Modal, Form, Row, Col } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
-import { addTag } from "../../../services/firebase/operations/tags";
+import {
+  addTag,
+  getTags,
+  listenTags,
+} from "../../../services/firebase/operations/tags";
 import { AuthContext } from "../../../App";
+import toArray from "lodash/toArray";
 
 export default ({ show, handleClose, action, tag }) => {
   const { plan } = useContext(AuthContext);
   const [Name, setName] = useState("");
   const [Comments, setComments] = useState("");
+  const [tags, setTags] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        return await getTags(plan ? plan : " ");
+      } catch (error) {
+        return error;
+      }
+    }
+
+    fetchData()
+      .then((data) => {
+        if (data.exists()) {
+          setTags(toArray(data.val()));
+        }
+      })
+      .catch((error) => newErrorToast(`ERROR: ${error.message}`));
+
+    listenTagsChange();
+  }, []);
+
+  const listenTagsChange = () => {
+    listenTags(plan ? plan : " ", (tags) => {
+      if (tags.exists()) {
+        setTags(toArray(tags.val()));
+      }
+    });
+  };
 
   useEffect(() => {
     setName(tag.Name ? tag.Name : "");
     setComments(tag.Comments ? tag.Comments : "");
   }, [tag]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (tags.find((tag) => tag.Name.toUpperCase() === Name.toUpperCase())) {
+      newErrorToast(`El código ${Name} ya existe`);
+      return;
+    }
+
     try {
       const slug = action === "ADD" ? generateUniqueKey() : tag.slug;
       await addTag(plan ? plan : " ", slug, {
@@ -38,7 +78,9 @@ export default ({ show, handleClose, action, tag }) => {
       <Modal.Header closeButton>
         <Modal.Title>
           {" "}
-          {action === "ADD" ? "Agregar Códigos" : "Editar Código"}
+          {action === "ADD"
+            ? "Agregar Tipo de Actividad"
+            : "Editar Tipo de Actividad"}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>

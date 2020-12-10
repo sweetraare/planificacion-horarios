@@ -2,16 +2,60 @@ import React, { useContext, useEffect, useState } from "react";
 import { Button, Modal, Form, Row, Col } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
-import { addSpace } from "../../../services/firebase/operations/spaces";
+import {
+  addSpace,
+  listenSpaces,
+  getSpaces,
+} from "../../../services/firebase/operations/spaces";
 import { AuthContext } from "../../../App";
+import toArray from "lodash/toArray";
 
 export default ({ show, handleClose }) => {
   const { plan } = useContext(AuthContext);
   const [Name, setName] = useState("");
   const [Comments, setComments] = useState("");
+  const [buildings, setBuildings] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        return await getSpaces(plan ? plan : " ", "building");
+      } catch (e) {
+        return e;
+      }
+    }
+
+    fetchData()
+      .then((data) => {
+        if (data.exists()) {
+          setBuildings(toArray(data.val()));
+        }
+      })
+      .catch((e) => {
+        console.log(e);
+        newErrorToast(`ERROR: ${e.message}`);
+      });
+    listenBuildingsChange();
+  }, []);
+
+  const listenBuildingsChange = () => {
+    listenSpaces(plan ? plan : " ", "building", (data) => {
+      if (data.exists()) {
+        setBuildings(toArray(data.val()));
+      }
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (
+      buildings.find(
+        (building) => building.Name.toUpperCase() === Name.toUpperCase()
+      )
+    ) {
+      newErrorToast(`ERROR: ${Name} ya se encuentra registrado`);
+      return;
+    }
     try {
       const slug = generateUniqueKey();
       await addSpace(plan ? plan : " ", "building", slug, {

@@ -3,15 +3,20 @@ import {
   Button,
   Modal,
   ListGroup,
-  ButtonGroup,
   InputGroup,
   FormControl,
+  ButtonGroup,
 } from "react-bootstrap";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
-import { editStudentProperty } from "../../../services/firebase/operations/students";
+import {
+  editStudentProperty,
+  getStudents,
+  listenStudents,
+} from "../../../services/firebase/operations/students";
 import { AuthContext } from "../../../App";
 import "./StudentsGroupModal.css";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
+import toArray from "lodash/toArray";
 
 export default ({ show, handleClose, student }) => {
   const { plan } = useContext(AuthContext);
@@ -22,6 +27,59 @@ export default ({ show, handleClose, student }) => {
   const [NumberOfStudents, setNumberOfStudents] = useState("");
   const [isNewGroup, setIsNewGroup] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [students, setStudents] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        return await getStudents(plan ? plan : " ");
+      } catch (error) {
+        return error;
+      }
+    }
+
+    fetchData()
+      .then((data) => {
+        if (data.exists()) {
+          const studentsData = toArray(data.val()).reduce((acc, s) => {
+            if (s.groups) {
+              s.groups.forEach((g) => {
+                if (g.subgroups) {
+                  acc = acc.concat(g.subgroups);
+                }
+              });
+              acc = acc.concat(s.groups);
+            }
+            acc = acc.concat(s);
+            return acc;
+          }, []);
+          setNumberOfStudents(studentsData);
+        }
+      })
+      .catch((error) => newErrorToast(`ERROR: ${error.message}`));
+
+    listenStudentsChange();
+  }, []);
+
+  const listenStudentsChange = () => {
+    listenStudents(plan ? plan : " ", (data) => {
+      if (data.exists()) {
+        const studentsData = toArray(data.val()).reduce((acc, s) => {
+          if (s.groups) {
+            acc = acc.concat(s.groups);
+            s.groups.forEach((g) => {
+              if (g.subgroups) {
+                acc = acc.concat(g.subgroups);
+              }
+            });
+          }
+          acc = acc.concat(s);
+          return acc;
+        }, []);
+        setStudents(studentsData);
+      }
+    });
+  };
 
   useEffect(() => {
     setGroups(student.groups ? student.groups : []);
@@ -92,7 +150,19 @@ export default ({ show, handleClose, student }) => {
       return (
         <div className="group-container">
           {group.Name}{" "}
-          <Button onClick={() => handleEditGroup(group, index)}>Editar</Button>
+          <ButtonGroup>
+            <Button onClick={() => handleEditGroup(group, index)}>
+              Editar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                window.confirm("Esta seguro de eliminar el grupo?");
+              }}
+            >
+              Eliminar
+            </Button>
+          </ButtonGroup>
         </div>
       );
     }
@@ -104,7 +174,16 @@ export default ({ show, handleClose, student }) => {
     setNumberOfStudents(group.NumberOfStudents);
     setComments(group.Comments);
   };
+
   const handleSave = async () => {
+    if (
+      students.find((s) =>
+        groups.find((g) => g.Name.toUpperCase() === s.Name.toUpperCase())
+      )
+    ) {
+      newErrorToast(`El grupo ${Name} ya existe`);
+      return;
+    }
     try {
       await editStudentProperty(plan, student.slug, "groups", groups);
       newSuccessToast(`Grupos actualizados correctamente`);

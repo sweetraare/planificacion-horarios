@@ -243,7 +243,7 @@ export default () => {
                     },
                   },
                   {
-                    text: "Código Actividad",
+                    text: "Tipo de Actividad",
                     sort: true,
                     dataField: "Tag",
                     formatter: (cell) => cell && cell.Name,

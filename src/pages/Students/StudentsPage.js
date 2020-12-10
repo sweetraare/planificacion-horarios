@@ -40,8 +40,8 @@ export default () => {
     async function fetchData() {
       try {
         return await getStudents(plan ? plan : " ");
-      } catch (errror) {
-        return errror;
+      } catch (error) {
+        return error;
       }
     }
 
@@ -198,21 +198,21 @@ export default () => {
                             &nbsp; Subgrupos
                           </Button>
                           &nbsp;
-                          <Button
-                            variant={
-                              row.active ? "outline-danger" : "outline-success"
-                            }
-                            className="btn-sm"
-                            onClick={() => handleChangeActiveItem(row)}
-                          >
-                            <FontAwesomeIcon
-                              icon={row.active ? faTrashAlt : faCheck}
-                            />
-                            &nbsp;
-                            {row.active
-                              ? "Activar actividades"
-                              : "Desactivar actividades"}
-                          </Button>
+                          {/* <Button */}
+                          {/*   variant={ */}
+                          {/*     row.active ? "outline-danger" : "outline-success" */}
+                          {/*   } */}
+                          {/*   className="btn-sm" */}
+                          {/*   onClick={() => handleChangeActiveItem(row)} */}
+                          {/* > */}
+                          {/*   <FontAwesomeIcon */}
+                          {/*     icon={row.active ? faTrashAlt : faCheck} */}
+                          {/*   /> */}
+                          {/*   &nbsp; */}
+                          {/*   {row.active */}
+                          {/*     ? "Activar actividades" */}
+                          {/*     : "Desactivar actividades"} */}
+                          {/* </Button> */}
                         </>
                       );
                     },

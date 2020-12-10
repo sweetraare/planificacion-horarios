@@ -523,7 +523,7 @@ export default () => {
                   </Form.Group>
                   <Form.Group as={Row}>
                     <Form.Label column sm={4}>
-                      Código
+                      Tipo de Actividad
                     </Form.Label>
                     <Col sm={8}>
                       <Form.Control

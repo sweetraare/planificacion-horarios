@@ -10,6 +10,7 @@ import {
   getHoursList,
   listenHoursList,
 } from "../../../services/firebase/operations/hoursList";
+import uniq from "lodash/uniq";
 
 export default () => {
   const [Number_of_Hours, setNumber_of_Hours] = useState(8);
@@ -77,6 +78,10 @@ export default () => {
           `ERROR: existe alguna hora que no está llena. Por favor revisar`
         );
       } else {
+        if (uniq(HoursListCopy).length !== HoursListCopy.length) {
+          newErrorToast(`Existe un nombre de horario repetido`);
+          return;
+        }
         try {
           await addHoursList({
             Number_of_Hours,

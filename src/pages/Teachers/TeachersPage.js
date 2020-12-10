@@ -178,14 +178,14 @@ export default () => {
                       verticalAlign: "middle",
                     },
                   },
-                  {
-                    text: "Restricciones lugar",
-                    headerStyle: {
-                      width: "30%",
-                      textAlign: "center",
-                      verticalAlign: "middle",
-                    },
-                  },
+                  // {
+                  //   text: "Restricciones lugar",
+                  //   headerStyle: {
+                  //     width: "30%",
+                  //     textAlign: "center",
+                  //     verticalAlign: "middle",
+                  //   },
+                  // },
                   {
                     text: "Acciones",
                     dataField: "",
@@ -201,7 +201,7 @@ export default () => {
                             &nbsp; Editar
                           </Button>
                           <Button
-                            variant="outline-secondary"
+                            variant="outline-primary"
                             className="btn-sm"
                             onClick={() => handleSubjects(row)}
                           >
@@ -209,21 +209,21 @@ export default () => {
                             &nbsp; Materias
                           </Button>
                           &nbsp;
-                          <Button
-                            variant={
-                              row.active ? "outline-danger" : "outline-success"
-                            }
-                            className="btn-sm"
-                            onClick={() => handleChangeActiveItem(row)}
-                          >
-                            <FontAwesomeIcon
-                              icon={row.active ? faTrashAlt : faCheck}
-                            />
-                            &nbsp;
-                            {row.active
-                              ? "Activar actividades"
-                              : "Desactivar actividades"}
-                          </Button>
+                          {/* <Button */}
+                          {/*   variant={ */}
+                          {/*     row.active ? "outline-danger" : "outline-success" */}
+                          {/*   } */}
+                          {/*   className="btn-sm" */}
+                          {/*   onClick={() => handleChangeActiveItem(row)} */}
+                          {/* > */}
+                          {/*   <FontAwesomeIcon */}
+                          {/*     icon={row.active ? faTrashAlt : faCheck} */}
+                          {/*   /> */}
+                          {/*   &nbsp; */}
+                          {/*   {row.active */}
+                          {/*     ? "Activar actividades" */}
+                          {/*     : "Desactivar actividades"} */}
+                          {/* </Button> */}
                         </>
                       );
                     },

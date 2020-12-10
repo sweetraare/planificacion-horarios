@@ -56,18 +56,18 @@ export default ({ history }) => {
                 />
               </Form.Group>
               <Form.Group controlId="formBasicPassword">
-                <Form.Label>Password</Form.Label>
+                <Form.Label>Contraseña</Form.Label>
                 <Form.Control
                   type="password"
-                  placeholder="Password"
+                  placeholder="Contraseña"
                   onChange={(event) => setPassword(event.target.value)}
                 />
                 <Form.Text className="text-muted">
-                  Don't share your password
+                  No compartas tu contraseña
                 </Form.Text>
               </Form.Group>
               <Button variant="primary" type="submit">
-                Log In
+                Ingresar
               </Button>
               &nbsp;
               <Button
@@ -75,14 +75,14 @@ export default ({ history }) => {
                 type="button"
                 onClick={() => history.push("/home")}
               >
-                Cancel
+                Cancelar
               </Button>
               {error ? (
                 <Form.Text className="text-danger">{error}</Form.Text>
               ) : null}
               <br />
               <Form.Text>
-                <Link to={RESET_PASSWORD}>I forget my password</Link>
+                <Link to={RESET_PASSWORD}>Olvidé mi contraseña</Link>
               </Form.Text>
             </Form>
           </Card>

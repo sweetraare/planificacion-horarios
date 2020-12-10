@@ -212,7 +212,7 @@ export default ({
       case "tag-room":
         return (
           <tr>
-            <td>Código-Aula</td>
+            <td>Tipo-Aula</td>
             <td>{tagFound && tagFound.Name}</td>
             <td>{roomFound && roomFound.Name}</td>
             <td>
@@ -252,7 +252,7 @@ export default ({
       case "tag-group":
         return (
           <tr>
-            <td>Código-Grupo</td>
+            <td>Tipo-Grupo</td>
             <td>{tagFound && tagFound.Name}</td>
             <td>
               {roomsList.length && spaceConstraint.preferredRooms && (
@@ -292,7 +292,9 @@ export default ({
                 selectedSubject.Name ? selectedSubject.Name : ""
               }`}</p>
               <p>{`Aula: ${selectedRoom.Name ? selectedRoom.Name : ""}`}</p>
-              <p>{`Código: ${selectedTag.Name ? selectedTag.Name : ""}`}</p>
+              <p>{`Tipo Actividad: ${
+                selectedTag.Name ? selectedTag.Name : ""
+              }`}</p>
               <Form.Group>
                 <Form.Label>
                   En base a lo seleccionado, puedes crear una de las siguientes
@@ -345,8 +347,8 @@ export default ({
               <Table responsive striped bordered size={"sm"}>
                 <thead>
                   <tr>
-                    <th>Tipo</th>
-                    <th>Materia/Código</th>
+                    <th>Tipo Restricción</th>
+                    <th>Materia/Tipo Actividad</th>
                     <th>Aula(s)</th>
                     <th>Acción</th>
                   </tr>

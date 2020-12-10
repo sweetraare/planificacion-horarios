@@ -371,7 +371,7 @@ export default ({ show, handleClose, action, tag }) => {
               </Col>
               <Col xs={6} className="select-container border rounded">
                 <div className="select-title">
-                  <h4> Categorías </h4>
+                  <h4>Tipo de Actividad</h4>
                   <Form.Control
                     placeholder="Buscar"
                     value={searchTag}
@@ -451,7 +451,7 @@ export default ({ show, handleClose, action, tag }) => {
               </Form.Group>
               <Form.Group as={Row}>
                 <Form.Label column sm={4}>
-                  Categoría seleccionada:
+                  Tipo de Actividad seleccionada:
                 </Form.Label>
                 <Col sm={8}>
                   <Form.Control

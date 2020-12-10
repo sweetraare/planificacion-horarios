@@ -146,37 +146,37 @@ export default () => {
                       verticalAlign: "middle",
                     },
                   },
-                  {
-                    text: "Acciones",
-                    dataField: "",
-                    formatter: (cell, row) => {
-                      return (
-                        <>
-                          <Button
-                            variant={
-                              row.active ? "outline-danger" : "outline-success"
-                            }
-                            className="btn-sm"
-                            onClick={() => handleChangeActiveItem(row)}
-                          >
-                            <FontAwesomeIcon
-                              icon={row.active ? faTrashAlt : faCheck}
-                            />
-                            &nbsp;
-                            {row.active
-                              ? "Activar actividades"
-                              : "Desactivar actividades"}
-                          </Button>
-                        </>
-                      );
-                    },
-                    align: "center",
-                    headerStyle: {
-                      width: "15%",
-                      textAlign: "center",
-                      verticalAlign: "middle",
-                    },
-                  },
+                  // {
+                  //   text: "Acciones",
+                  //   dataField: "",
+                  //   formatter: (cell, row) => {
+                  //     return (
+                  //       <>
+                  //         <Button
+                  //           variant={
+                  //             row.active ? "outline-danger" : "outline-success"
+                  //           }
+                  //           className="btn-sm"
+                  //           onClick={() => handleChangeActiveItem(row)}
+                  //         >
+                  //           <FontAwesomeIcon
+                  //             icon={row.active ? faTrashAlt : faCheck}
+                  //           />
+                  //           &nbsp;
+                  //           {row.active
+                  //             ? "Activar actividades"
+                  //             : "Desactivar actividades"}
+                  //         </Button>
+                  //       </>
+                  //     );
+                  //   },
+                  //   align: "center",
+                  //   headerStyle: {
+                  //     width: "15%",
+                  //     textAlign: "center",
+                  //     verticalAlign: "middle",
+                  //   },
+                  // },
                 ]}
               />
             </Col>

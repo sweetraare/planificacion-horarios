@@ -2,8 +2,13 @@ import React, { useContext, useEffect, useState } from "react";
 import { Button, Modal, Form, Row, Col } from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
-import { addSpace } from "../../../services/firebase/operations/spaces";
+import {
+  addSpace,
+  listenSpaces,
+  getSpaces,
+} from "../../../services/firebase/operations/spaces";
 import { AuthContext } from "../../../App";
+import toArray from "lodash/toArray";
 
 export default ({ show, handleClose, buildings }) => {
   console.log("buildings", buildings);
@@ -12,9 +17,44 @@ export default ({ show, handleClose, buildings }) => {
   const [Comments, setComments] = useState("");
   const [Capacity, setCapacity] = useState("");
   const [Building, setBuilding] = useState("");
+  const [rooms, setRooms] = useState([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        return await getSpaces(plan ? plan : " ", "rooms");
+      } catch (e) {
+        return e;
+      }
+    }
+
+    fetchData()
+      .then((data) => {
+        if (data.exists()) {
+          setRooms(toArray(data.val()));
+        }
+      })
+      .catch((e) => {
+        console.log(e);
+        newErrorToast(`ERROR: ${e.message}`);
+      });
+    listenRoomsChange();
+  }, []);
+
+  const listenRoomsChange = () => {
+    listenSpaces(plan ? plan : " ", "rooms", (data) => {
+      if (data.exists()) {
+        setRooms(toArray(data.val()));
+      }
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (rooms.find((room) => room.Name.toUpperCase() === Name.toUpperCase())) {
+      newErrorToast(`ERROR: ${Name} ya se encuentra registrado`);
+      return;
+    }
     try {
       const slug = generateUniqueKey();
       await addSpace(plan ? plan : " ", "rooms", slug, {

@@ -6,12 +6,7 @@ import toArray from "lodash/toArray";
 import { newErrorToast } from "../../utils/toasts";
 import { Button, Col, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faCheck,
-  faPlus,
-  faTrashAlt,
-  faPencilAlt,
-} from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 import DataTable from "../../components/DataTable";
 import { textFilter } from "react-bootstrap-table2-filter";
 import TagsFormModal from "./components/TagsFormModal";
@@ -35,10 +30,6 @@ export default () => {
     setAction("EDIT");
     setShowFormModal(true);
   };
-  const handleChangeActiveItem = () => {
-    console.log("activate");
-  };
-
   const handleCancel = () => {
     setShowFormModal(false);
     setSelectedTag({});
@@ -49,8 +40,8 @@ export default () => {
     async function fetchData() {
       try {
         return await getTags(plan ? plan : " ");
-      } catch (errror) {
-        return errror;
+      } catch (error) {
+        return error;
       }
     }
 
@@ -75,7 +66,7 @@ export default () => {
 
   return (
     <AdminLayout>
-      <h1>Códigos</h1>
+      <h1>Tipos de Actividad</h1>
       {plan ? (
         <>
           {" "}
@@ -83,7 +74,7 @@ export default () => {
             <Col>
               <Button variant="primary" onClick={handleAddItem}>
                 <FontAwesomeIcon icon={faPlus} />
-                &nbsp;Agregar Códigos
+                &nbsp;Agregar tipo de actividad
               </Button>
             </Col>
           </Row>
@@ -127,21 +118,21 @@ export default () => {
                           >
                             <FontAwesomeIcon icon={faPencilAlt} /> &nbsp; Editar
                           </Button>
-                          <Button
-                            variant={
-                              row.active ? "outline-danger" : "outline-success"
-                            }
-                            className="btn-sm"
-                            onClick={() => handleChangeActiveItem(row)}
-                          >
-                            <FontAwesomeIcon
-                              icon={row.active ? faTrashAlt : faCheck}
-                            />
-                            &nbsp;
-                            {row.active
-                              ? "Activar actividades"
-                              : "Desactivar actividades"}
-                          </Button>
+                          {/* <Button */}
+                          {/*   variant={ */}
+                          {/*     row.active ? "outline-danger" : "outline-success" */}
+                          {/*   } */}
+                          {/*   className="btn-sm" */}
+                          {/*   onClick={() => handleChangeActiveItem(row)} */}
+                          {/* > */}
+                          {/*   <FontAwesomeIcon */}
+                          {/*     icon={row.active ? faTrashAlt : faCheck} */}
+                          {/*   /> */}
+                          {/*   &nbsp; */}
+                          {/*   {row.active */}
+                          {/*     ? "Activar actividades" */}
+                          {/*     : "Desactivar actividades"} */}
+                          {/* </Button> */}
                         </>
                       );
                     },

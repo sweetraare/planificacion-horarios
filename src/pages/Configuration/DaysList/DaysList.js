@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, Col, Form, Row, Table } from "react-bootstrap";
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
 import "./DaysList.scss";
 import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
 import {
@@ -10,6 +9,7 @@ import {
   getDaysList,
   listenDaysList,
 } from "../../../services/firebase/operations/daysList";
+import uniq from "lodash/uniq";
 
 export default () => {
   const [Number_of_Days, setNumber_of_Days] = useState(5);
@@ -72,6 +72,10 @@ export default () => {
           `ERROR: existe algún día que no está lleno. Por favor revisar`
         );
       } else {
+        if (uniq(DaysListCopy).length !== DaysListCopy.length) {
+          newErrorToast(`ERROR, existen días con el mismo nombre`);
+          return;
+        }
         try {
           await addDaysList({
             Number_of_Days,

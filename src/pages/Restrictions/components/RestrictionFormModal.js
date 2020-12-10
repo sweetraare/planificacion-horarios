@@ -208,7 +208,7 @@ export default ({
               <Table responsive striped bordered size={"sm"}>
                 <thead>
                   <tr>
-                    <th>Tipo</th>
+                    <th>Tipo Restricción</th>
                     <th>Profesor/Actividad</th>
                     <th>Acción</th>
                   </tr>
