@@ -37,7 +37,8 @@
     "react-slugify": "^2.0.1",
     "react-toastify": "^5.5.0",
     "recharts": "^1.8.5",
-    "xlsx": "^0.16.8"
+    "xlsx": "^0.16.8",
+    "xml2js": "^0.4.23"
   },
   "scripts": {
     "start": "react-scripts start",

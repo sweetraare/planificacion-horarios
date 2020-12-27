@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import AdminLayout from "../../HOC/AdminLayout";
-import { Button, Col, Row, Table } from "react-bootstrap";
+import { Form, Button, Col, Row, Table } from "react-bootstrap";
 import { AuthContext } from "../../App";
 import { toArray } from "lodash";
 import { orderBy } from "lodash";
@@ -21,6 +21,11 @@ import {
   getInstitution,
   getComments,
 } from "../../services/firebase/operations/institution";
+import {
+  addTimetable,
+  getTimetable,
+  listenTimetable,
+} from "../../services/firebase/operations/timetable";
 import axios from "axios";
 import csv from "csvtojson";
 import XLSX from "xlsx";
@@ -49,6 +54,7 @@ export default () => {
   const [spaceConstraints, setSpaceConstraints] = useState([]);
   const [timeConstraintsInput, setTimeConstraintsInput] = useState([]);
   const [error, setError] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -76,6 +82,7 @@ export default () => {
         const timeConstraintsFetched = await getTimeContraints(
           plan ? plan : " "
         );
+        const timetableFetched = await getTimetable(plan ? plan : " ");
 
         return {
           subjectsFetched,
@@ -93,6 +100,7 @@ export default () => {
           breakConstraintFetched,
           spaceConstraintsFetched,
           timeConstraintsInputFetched,
+          timetableFetched,
         };
       } catch (error) {
         return error;
@@ -117,6 +125,7 @@ export default () => {
           breakConstraintFetched,
           spaceConstraintsFetched,
           timeConstraintsInputFetched,
+          timetableFetched,
         } = data;
 
         setData(
@@ -172,8 +181,13 @@ export default () => {
         if (timeConstraintsInputFetched.exists()) {
           setTimeConstraintsInput(toArray(timeConstraintsInputFetched.val()));
         }
+        if (timetableFetched.exists()) {
+          setTimeTable(timetableFetched.val());
+          setShowButtons(true);
+        }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
+    listenTimetableChange();
   }, []);
 
   useEffect(() => {
@@ -189,6 +203,14 @@ export default () => {
       setActiveGenerateXML(true);
     }
   }, [subjects, teachers, students, tags, buildings, rooms, timeConstraints]);
+
+  const listenTimetableChange = () => {
+    listenTimetable(plan ? plan : " ", (tt) => {
+      if (tt.exists()) {
+        setTimeTable(tt.val());
+      }
+    });
+  };
 
   const generateXML = async () => {
     const newXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -277,6 +299,7 @@ ${generateSpaceConstraintsXML()}
           });
 
           setTimeTable(newTimeTable);
+          addTimetable(plan ? plan : " ", newTimeTable).then();
           setShowButtons(true);
         })
         .catch((e) => console.log(e));
@@ -663,6 +686,10 @@ ${sc.preferredRooms
     setTypeOfTimeTable("ALL");
   };
 
+  const showTeachersTimeTable = () => {
+    setTypeOfTimeTable("TEACHERS");
+  };
+
   const generateTimeTable = () => {
     if (error.length)
       return (
@@ -673,6 +700,116 @@ ${sc.preferredRooms
         </>
       );
     switch (typeOfTimeTable) {
+      case "TEACHERS":
+        const teachersTimeTable = data
+          .map((activity) => {
+            const activityTimeTables = [...timeTable].filter(
+              (t) => +t["Activity Id"] === activity.id
+            );
+
+            const firstTimeTable = orderBy(
+              activityTimeTables,
+              ["hourIndex"],
+              ["asc"]
+            )[0];
+
+            return { ...activity, firstTimeTable };
+          })
+          .filter((i) => i.Teacher === selectedTeacher);
+
+        return (
+          <>
+            <div className="my-5">
+              <Form.Group as={Row}>
+                <Form.Label column sm={4}>
+                  Seleccione un profesor
+                </Form.Label>
+                <Col sm={4}>
+                  <Form.Control
+                    as="select"
+                    name="role"
+                    value={selectedTeacher}
+                    onChange={(event) => setSelectedTeacher(event.target.value)}
+                  >
+                    <option value="">Selecciona un profesor</option>
+                    {orderBy(teachers, ["Name"], ["asc"]).map((teacher) => (
+                      <option value={teacher.Name}>{teacher.Name}</option>
+                    ))}
+                  </Form.Control>
+                </Col>
+              </Form.Group>
+            </div>
+            <Table striped bordered responsive>
+              <thead>
+                <tr>
+                  <th style={{ width: "20vw" }}>Profesor</th>
+                  <th style={{ width: "20vw" }}>Materia</th>
+                  <th style={{ width: "20vw" }}>Estudiantes</th>
+                  <th style={{ width: "20vw" }}>Duración</th>
+                  {days.Days_List &&
+                    days.Days_List.map((day) => (
+                      <th style={{ width: "20vw" }}>{day}</th>
+                    ))}
+                </tr>
+              </thead>
+              <tbody>
+                {teachersTimeTable.map((tt) => (
+                  <tr>
+                    <td>{tt.Teacher}</td>
+                    <td>{tt.Subject}</td>
+                    <td>{`${tt.Students.map((s) => s.Name).join(",")}`}</td>
+                    <td>{tt.Duration}</td>
+                    {days.Days_List &&
+                      days.Days_List.map((day, index) => {
+                        return (
+                          <td>
+                            {day === tt.firstTimeTable.Day ? (
+                              <>
+                                {" "}
+                                <span>
+                                  {" "}
+                                  {tt.Duration == 1
+                                    ? tt.firstTimeTable.Hour
+                                    : tt.firstTimeTable.Hour.substring(
+                                        0,
+                                        tt.firstTimeTable.Hour.indexOf("-")
+                                      )}
+                                </span>
+                                {tt.Duration > 1 ? (
+                                  <span>
+                                    {hours.Hours_List[
+                                      tt.firstTimeTable.hourIndex +
+                                        tt.Duration -
+                                        1
+                                    ].substring(
+                                      hours.Hours_List[
+                                        tt.firstTimeTable.hourIndex +
+                                          tt.Duration -
+                                          1
+                                      ].indexOf("-")
+                                    )}
+                                  </span>
+                                ) : (
+                                  ""
+                                )}
+                                <div>
+                                  {tt.firstTimeTable.Room &&
+                                    `(${tt.firstTimeTable.Room})`}
+                                </div>{" "}
+                              </>
+                            ) : (
+                              ""
+                            )}
+                          </td>
+                        );
+                      })}
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </>
+        );
+
       case "ALL":
         const allTimeTable = data.map((activity) => {
           const activityTimeTables = [...timeTable].filter(
@@ -716,17 +853,29 @@ ${sc.preferredRooms
                           {day === tt.firstTimeTable.Day ? (
                             <>
                               {" "}
-                              <div> {tt.firstTimeTable.Hour}</div>
+                              <span>
+                                {" "}
+                                {tt.Duration == 1
+                                  ? tt.firstTimeTable.Hour
+                                  : tt.firstTimeTable.Hour.substring(
+                                      0,
+                                      tt.firstTimeTable.Hour.indexOf("-")
+                                    )}
+                              </span>
                               {tt.Duration > 1 ? (
-                                <div>
-                                  {
+                                <span>
+                                  {hours.Hours_List[
+                                    tt.firstTimeTable.hourIndex +
+                                      tt.Duration -
+                                      1
+                                  ].substring(
                                     hours.Hours_List[
                                       tt.firstTimeTable.hourIndex +
                                         tt.Duration -
                                         1
-                                    ]
-                                  }
-                                </div>
+                                    ].indexOf("-")
+                                  )}
+                                </span>
                               ) : (
                                 ""
                               )}
@@ -777,17 +926,27 @@ ${sc.preferredRooms
       newRow["Materia"] = tt.Subject;
       newRow["Estudiantes"] = tt.Students.map((s) => s.Name).join(",");
       newRow["Duración"] = tt.Duration;
-
       {
         days.Days_List &&
           days.Days_List.forEach((day, index) => {
             newRow[day] =
               day === tt.firstTimeTable.Day
-                ? `${tt.firstTimeTable.Hour}\n ${
+                ? `${
+                    tt.Duration === 1
+                      ? tt.firstTimeTable.Hour
+                      : tt.firstTimeTable.Hour.substring(
+                          0,
+                          tt.firstTimeTable.Hour.indexOf("-")
+                        )
+                  }${
                     tt.Duration > 1
                       ? hours.Hours_List[
                           tt.firstTimeTable.hourIndex + tt.Duration - 1
-                        ]
+                        ].substring(
+                          hours.Hours_List[
+                            tt.firstTimeTable.hourIndex + tt.Duration - 1
+                          ].indexOf("-")
+                        )
                       : ""
                   } ${tt.firstTimeTable.Room && tt.firstTimeTable.Room}`
                 : "";
@@ -811,7 +970,10 @@ ${sc.preferredRooms
           </Button>
           {showButtons ? (
             <>
-              <Button> Horario Profesores</Button>
+              <Button onClick={showTeachersTimeTable}>
+                {" "}
+                Horario Profesores
+              </Button>
               <Button onClick={showAllTimeTable}> Todos los horarios </Button>
               <Button onClick={handleSaveToExcel}>Descargar Excel</Button>
             </>

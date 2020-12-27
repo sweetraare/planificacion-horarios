@@ -24,6 +24,7 @@ import {
   ACTIVITIES_PAGE,
   TIMETABLE_PAGE,
   RESTRICTIONS_PAGE,
+  USERS_PAGE,
 } from "./constants/routes";
 
 import { auth } from "./services/firebase/config";
@@ -43,6 +44,7 @@ import TagsPage from "./pages/Tags/TagsPage";
 import ActivitiesPage from "./pages/Activities/ActivitiesPage";
 import TimetablePage from "./pages/Timetable/TimetablePage";
 import RestrictionPage from "./pages/Restrictions/RestrictionPage";
+import UsersPage from "./pages/Users/Users";
 
 export const AuthContext = React.createContext(null);
 
@@ -94,6 +96,7 @@ export default () => {
             <Route path={SUBJECTS_PAGE} exact component={SubjectsPage} />
             <Route path={TEACHERS_PAGE} exact component={TeachersPage} />
             <Route path={TIMETABLE_PAGE} exact component={TimetablePage} />
+            <Route path={USERS_PAGE} exact component={UsersPage} />
             {/*<Route path={FORBIDDEN_PAGE} component={ForbiddenPage}/>*/}
             <Route path="*" component={PageNotFound} />
           </Switch>

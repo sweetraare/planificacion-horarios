@@ -13,6 +13,7 @@ import {
   faPaperclip,
   faCalendarAlt,
   faLock,
+  faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -27,6 +28,7 @@ import {
   ACTIVITIES_PAGE,
   TIMETABLE_PAGE,
   RESTRICTIONS_PAGE,
+  USERS_PAGE,
 } from "../../constants/routes";
 import LogOutModal from "../LogOutModal";
 
@@ -117,6 +119,12 @@ const SideBarMenu = ({ history, onToggle }) => {
               <FontAwesomeIcon icon={faCogs} className="icon" />
             </NavIcon>
             <NavText>Configuración</NavText>
+          </NavItem>
+          <NavItem eventKey={USERS_PAGE.substring(1)}>
+            <NavIcon>
+              <FontAwesomeIcon icon={faUsers} className="icon" />
+            </NavIcon>
+            <NavText>Usuarios</NavText>
           </NavItem>
 
           <NavItem onClick={() => setShowLogoutModal(true)}>

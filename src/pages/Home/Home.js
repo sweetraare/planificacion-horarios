@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import AdminLayout from "../../HOC/AdminLayout";
 import "./Home.css";
-import { Button, Col, Form, Row } from "react-bootstrap";
+import { InputGroup, Button, Col, Form, Row } from "react-bootstrap";
 import {
   addPlan,
   getPlans,
@@ -19,6 +19,8 @@ import { newErrorToast, newSuccessToast } from "../../utils/toasts";
 import { toArray } from "lodash";
 import { AuthContext } from "../../App";
 import { generateXML } from "../../utils/generateFETFile";
+import ImportDataModal from "./components/ImportDataModal";
+import xml2js from "xml2js";
 
 export default () => {
   const { plan, setPlan } = useContext(AuthContext);
@@ -33,6 +35,9 @@ export default () => {
   const [comments, setComments] = useState("");
   const [DaysList, setDaysList] = useState({});
   const [HoursList, seetHoursList] = useState({});
+  const [fileToImport, setFileToImport] = useState(null);
+  const [FETData, setFETData] = useState(null);
+  const [showImportModal, setSHowImportModal] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -80,7 +85,6 @@ export default () => {
         }
       })
       .catch((error) => newErrorToast(`ERROR: ${error.message}`));
-
     listenPlansListChange();
   }, []);
 
@@ -104,6 +108,10 @@ export default () => {
     } catch (error) {
       newErrorToast(`ERROR: ${error.message}`);
     }
+  };
+
+  const handleClose = () => {
+    setSHowImportModal(false);
   };
 
   const listenPlansListChange = () => {
@@ -166,13 +174,98 @@ export default () => {
       "data:text/plain;charset=utf-8," + encodeURIComponent(XMLResponse)
     );
     element.setAttribute("download", `${plan}.fet`);
-
     element.style.display = "none";
     document.body.appendChild(element);
-
     element.click();
-
     document.body.removeChild(element);
+  };
+
+  const handleFile = () => {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = reader.result;
+        xml2js.parseString(data, (error, result) => {
+          if (error) {
+            newErrorToast(`Ha existido un error en la importación: ${error}`);
+            console.log(error);
+            setFETData(null);
+          } else {
+            if (result.fet) {
+              console.log(result.fet);
+              const FETObject = {
+                Activities: result.fet.Activities_List
+                  ? result.fet.Activities_List[0].Activity.map((activity) => ({
+                      ActivityGroupId: +activity.Activity_Group_Id[0],
+                      ActivityTag: activity.Activity_Tag[0],
+                      Duration: activity.Duration[0],
+                      Id: +activity.Id[0],
+                      Students: activity.Students,
+                      Subject: activity.Subject[0],
+                      Teacher: activity.Teacher[0],
+                      TotalDuration: +activity.Total_Duration[0],
+                    }))
+                  : [],
+                Tags: result.fet.Activity_Tags_List
+                  ? result.fet.Activity_Tags_List[0].Activity_Tag.map(
+                      (tag) => ({
+                        Name: tag.Name[0],
+                        Comments: tag.Comments[0],
+                      })
+                    )
+                  : [],
+                Buildings: result.fet.Buildings_List
+                  ? result.fet.Buildings_List[0].Building.map((building) => ({
+                      Name: building.Name[0],
+                      Comments: building.Comments[0],
+                    }))
+                  : [],
+                Rooms: result.fet.Rooms_List
+                  ? result.fet.Rooms_List[0].Room.map((room) => ({
+                      Name: room.Name[0],
+                      Capacity: +room.Capacity[0],
+                      Building: room.Building[0],
+                      Comments: room.Comments[0],
+                    }))
+                  : [],
+                Subjects: result.fet.Subjects_List
+                  ? result.fet.Subjects_List[0].Subject.map((subject) => ({
+                      Name: subject.Name[0],
+                      Comments: subject.Comments[0],
+                    }))
+                  : [],
+                Teachers: result.fet.Teachers_List
+                  ? result.fet.Teachers_List[0].Teacher.map((teacher) => ({
+                      Name: teacher.Name[0],
+                      Comments: teacher.Comments[0],
+                      TargetNumberOfHours: +teacher.Target_Number_of_Hours[0],
+                      QualifiedSubjects:
+                        teacher.Qualified_Subjects[0].Qualified_Subject,
+                    }))
+                  : [],
+                Students: result.fet.Students_List
+                  ? result.fet.Students_List[0].Year
+                  : [],
+                BreakConstraints: result.fet.Time_Constraints_List
+                  ? result.fet.Time_Constraints_List[0].ConstraintBreakTimes
+                  : [],
+              };
+              console.log("mi objecto:", FETObject);
+              setFETData(FETObject);
+              setSHowImportModal(true);
+            }
+          }
+        });
+      };
+      reader.readAsText(fileToImport);
+    } catch (e) {
+      console.log(e);
+      newErrorToast(`Asegúrese de haber seleccionado un archivo`);
+    }
+  };
+
+  const handleChangeFile = (e) => {
+    setFileToImport(e.target.files[0]);
   };
 
   return (
@@ -202,6 +295,18 @@ export default () => {
           Exportar Plan a FET
         </Button>
       </div>
+      <InputGroup>
+        <input
+          type="file"
+          className="form-control"
+          id="file"
+          // accept={SheetJSFT}
+          onChange={handleChangeFile}
+        />
+        <InputGroup.Append>
+          <Button onClick={handleFile}>Importar Archivo</Button>
+        </InputGroup.Append>
+      </InputGroup>
       {showNewPlan && (
         <Form.Group as={Row} className="w-50">
           <Form.Label column sm={4}>
@@ -222,6 +327,11 @@ export default () => {
           </Col>
         </Form.Group>
       )}
+      <ImportDataModal
+        FETData={FETData}
+        show={showImportModal}
+        handleClose={handleClose}
+      />
     </AdminLayout>
   );
 };
