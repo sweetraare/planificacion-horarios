@@ -197,8 +197,7 @@ export default () => {
       students.length &&
       tags.length &&
       buildings.length &&
-      rooms.length &&
-      timeConstraints.length
+      rooms.length
     ) {
       setActiveGenerateXML(true);
     }
@@ -215,7 +214,7 @@ export default () => {
   const generateXML = async () => {
     const newXML = `<?xml version="1.0" encoding="UTF-8"?>
 
-<fet version="5.46.1">
+<fet version="5.35.5">
 <Institution_Name>${institution}</Institution_Name>
 
 <Comments>${comments}</Comments>
@@ -271,7 +270,7 @@ ${generateSpaceConstraintsXML()}
 
     try {
       const response = await axios.post(
-        " http://64.227.56.89:8080/api/upload",
+        "https://960186d510b9.ngrok.io/api/upload",
         formData
       );
 

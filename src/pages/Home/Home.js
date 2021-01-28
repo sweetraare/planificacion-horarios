@@ -247,7 +247,19 @@ export default () => {
                   ? result.fet.Students_List[0].Year
                   : [],
                 BreakConstraints: result.fet.Time_Constraints_List
-                  ? result.fet.Time_Constraints_List[0].ConstraintBreakTimes
+                  ? result.fet.Time_Constraints_List[0].ConstraintBreakTimes[0]
+                      .Break_Time
+                  : [],
+                ConstraintTeacherNotAvailableTimes: result.fet
+                  .Time_Constraints_List[0].ConstraintTeacherNotAvailableTimes
+                  ? result.fet.Time_Constraints_List[0]
+                      .ConstraintTeacherNotAvailableTimes
+                  : [],
+                ConstraintActivityPreferredStartingTime: result.fet
+                  .Time_Constraints_List[0]
+                  .ConstraintActivityPreferredStartingTime
+                  ? result.fet.Time_Constraints_List[0]
+                      .ConstraintActivityPreferredStartingTime
                   : [],
               };
               console.log("mi objecto:", FETObject);
@@ -331,6 +343,7 @@ export default () => {
         FETData={FETData}
         show={showImportModal}
         handleClose={handleClose}
+        plans={plans}
       />
     </AdminLayout>
   );

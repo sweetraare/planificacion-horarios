@@ -1,22 +1,35 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Table, Button, Modal, Tabs, Tab, Card } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import {
+  InputGroup,
+  FormControl,
+  Table,
+  Button,
+  Modal,
+  Tabs,
+  Tab,
+} from "react-bootstrap";
 import { generateUniqueKey } from "../../../utils/generateUniqueKey";
-import { newErrorToast } from "../../../utils/toasts";
-import { AuthContext } from "../../../App";
+import { newErrorToast, newSuccessToast } from "../../../utils/toasts";
+import toArray from "lodash/toArray";
+import {
+  addPlan,
+  setAllPlanData,
+} from "../../../services/firebase/operations/plans";
 
 import "./ImportDataModal.css";
 
-export default ({ show, handleClose, FETData }) => {
-  const { plan } = useContext(AuthContext);
-
+export default ({ show, handleClose, FETData, plans }) => {
+  const [newPlanName, setNewPlanName] = useState("");
   const [teachers, setTeachers] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [students, setStudents] = useState([]);
   const [tags, setTags] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [restrictions, setRestrictions] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [breakContraints, setBreakConstraints] = useState([]);
+  const [teacherNotAvailable, setTeacherNotAvailable] = useState([]);
+  const [activityPreferredHour, setActivityPreferredHour] = useState([]);
 
   useEffect(() => {
     setTeachers(FETData && FETData.Teachers ? FETData.Teachers : []);
@@ -28,6 +41,31 @@ export default ({ show, handleClose, FETData }) => {
     setActivities(FETData && FETData.Activities ? FETData.Activities : []);
     setBuildings(FETData && FETData.Buildings ? FETData.Buildings : []);
     setRooms(FETData && FETData.Rooms ? FETData.Rooms : []);
+    setTeacherNotAvailable(
+      FETData && FETData.ConstraintTeacherNotAvailableTimes
+        ? FETData.ConstraintTeacherNotAvailableTimes.reduce(
+            (acc, constraint) => {
+              constraint.Not_Available_Time.forEach((i) => {
+                acc.push({
+                  Teacher: constraint.Teacher,
+                  Day: i.Day,
+                  Hour: i.Hour,
+                });
+              });
+              return acc;
+            },
+            []
+          )
+        : []
+    );
+    setBreakConstraints(
+      FETData && FETData.BreakConstraints ? FETData.BreakConstraints : []
+    );
+    setActivityPreferredHour(
+      FETData && FETData.ConstraintActivityPreferredStartingTime
+        ? FETData.ConstraintActivityPreferredStartingTime
+        : []
+    );
   }, [FETData]);
 
   const formatStudents = (year) => {
@@ -57,6 +95,202 @@ export default ({ show, handleClose, FETData }) => {
       });
     }
     return newYearObject;
+  };
+
+  const handleSave = async () => {
+    if (plans.find((p) => p.toUpperCase() === newPlanName.toUpperCase())) {
+      newErrorToast(`ERROR: El plan ${newPlanName}, ya existe`);
+      return;
+    }
+
+    if (!newPlanName) {
+      newErrorToast(`ERROR: El nombre del plan no puede estar vacío`);
+      return;
+    }
+
+    try {
+      const subjectsToImport = subjects.reduce((acc, subject) => {
+        const slug = generateUniqueKey();
+        acc[slug] = {
+          slug,
+          Name: subject.Name,
+          Comments: subject.Comments,
+        };
+        return acc;
+      }, {});
+
+      const tagsToImport = tags.reduce((acc, tag) => {
+        const slug = generateUniqueKey();
+        acc[slug] = {
+          slug,
+          Name: tag.Name,
+          Comments: tag.Comments,
+        };
+        return acc;
+      }, {});
+
+      const studentsToImport = students.reduce((acc, student) => {
+        const slug = generateUniqueKey();
+        acc[slug] = {
+          slug,
+          Name: student.Name,
+          Comments: student.Comments,
+          NumberOfStudents: student.NumberOfStudents,
+        };
+        return acc;
+      }, {});
+
+      const buildingsToImport = buildings.reduce((acc, student) => {
+        const slug = generateUniqueKey();
+        acc[slug] = {
+          slug,
+          Name: student.Name,
+          Comments: student.Comments,
+        };
+        return acc;
+      }, {});
+
+      const roomsToImport = rooms.reduce((acc, room) => {
+        const slug = generateUniqueKey();
+        const buildingFound = toArray(buildingsToImport).find(
+          (building) => building.Name === room.Building
+        );
+        acc[slug] = {
+          slug,
+          Name: room.Name,
+          Comments: room.Comments,
+          Building: buildingFound ? buildingFound.slug : "",
+          Capacity: room.Capacity,
+        };
+        return acc;
+      }, {});
+
+      const spacesToImport = {
+        rooms: roomsToImport,
+        building: buildingsToImport,
+      };
+
+      const teachersToImport = teachers.reduce((acc, teacher) => {
+        const slug = generateUniqueKey();
+        const QualifiedSubjects =
+          teacher.QualifiedSubjects &&
+          teacher.QualifiedSubjects.map((qs) => {
+            const subjectFound = toArray(subjectsToImport).find(
+              (s) => s.Name === qs
+            );
+            return subjectFound ? subjectFound.slug : "";
+          });
+
+        acc[slug] = {
+          slug,
+          Name: teacher.Name,
+          Comments: teacher.Comments,
+          TargetNumberOfHours: teacher.TargetNumberOfHours,
+        };
+        if (QualifiedSubjects) {
+          acc[slug].QualifiedSubjects = QualifiedSubjects;
+        }
+        return acc;
+      }, {});
+
+      const activitiesToImport = activities.reduce((acc, activity) => {
+        const slug = generateUniqueKey();
+
+        const activityStudents =
+          activity.Students &&
+          activity.Students.map((as) => {
+            const sf = toArray(studentsToImport).find((s) => s.Name === as);
+            return sf ? sf.slug : "";
+          });
+
+        const subjectFound = toArray(subjectsToImport).find(
+          (s) => s.Name === activity.Subject
+        );
+
+        const tagFound = toArray(tagsToImport).find(
+          (t) => t.Name === activity.ActivityTag
+        );
+
+        const teacherFound = toArray(teachersToImport).find(
+          (t) => t.Name === activity.Teacher
+        );
+
+        acc[slug] = {
+          Active: true,
+          ActivityGroup: activity.ActivityGroupId,
+          Duration: +activity.Duration,
+          Students: activityStudents,
+          Subject: subjectFound ? subjectFound.slug : "",
+          Tag: tagFound ? tagFound.slug : "",
+          Teacher: teacherFound ? teacherFound.slug : "",
+          TotalDuration: activity.TotalDuration,
+          id: activity.Id,
+          slug,
+        };
+        return acc;
+      }, {});
+
+      const teacherNotAvailableToImport = teacherNotAvailable.reduce(
+        (acc, tna) => {
+          const slug = generateUniqueKey();
+          const teacherFound = toArray(teachersToImport).find(
+            (t) => t.Name === tna.Teacher
+          );
+          acc[slug] = {
+            slug,
+            day: tna.Day[0],
+            hour: tna.Hour[0],
+            restrictionType: "teacher-not-available",
+            teacher: teacherFound ? teacherFound.slug : "",
+          };
+          return acc;
+        },
+        {}
+      );
+
+      const activityPreferredHourToImport = activityPreferredHour.reduce(
+        (acc, aph) => {
+          const slug = generateUniqueKey();
+          const activityFound = toArray(activitiesToImport).find(
+            (a) => a.id === +aph.Activity_Id
+          );
+          acc[slug] = {
+            slug,
+            day: aph.Preferred_Day[0],
+            hour: aph.Preferred_Hour[0],
+            restrictionType: "activity-preferred-hour",
+            activity: activityFound ? activityFound.slug : "",
+          };
+          return acc;
+        },
+        {}
+      );
+
+      const planObject = {
+        activities: activitiesToImport,
+        breakContraints: breakContraints.map((bc) => ({
+          day: bc.Day[0],
+          hour: bc.Hour[0],
+        })),
+        spaces: spacesToImport,
+        students: studentsToImport,
+        subjects: subjectsToImport,
+        tags: tagsToImport,
+        teachers: teachersToImport,
+        timeContraintsInput: {
+          ...teacherNotAvailableToImport,
+          ...activityPreferredHourToImport,
+        },
+      };
+
+      await addPlan(newPlanName);
+      await setAllPlanData(newPlanName, planObject);
+      newSuccessToast(`Datos importados con éxito`);
+      handleClose();
+    } catch (e) {
+      console.log(e);
+      newErrorToast(`ERROR: ${e.message}`);
+    }
   };
 
   return (
@@ -261,14 +495,87 @@ export default ({ show, handleClose, FETData }) => {
           </Tab>
           <Tab eventKey="restrictions" title="Restricciones">
             <h1>Restricciones</h1>
-            <ul>
-              {subjects.map((subject) => (
-                <li>{JSON.stringify(subject)}</li>
-              ))}
-            </ul>
+            <hr />
+            <h2>Receso</h2>
+            <Table size="sm" responsive bordered striped>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Día</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakContraints.map((bc, index) => (
+                  <tr>
+                    <td>{index}</td>
+                    <td>{bc.Day}</td>
+                    <td>{bc.Hour}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <hr />
+            <h2>Horarios no disponible de profesores</h2>
+            <Table size="sm" responsive bordered striped>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Profesor</th>
+                  <th>Día</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teacherNotAvailable.map((tna, index) => (
+                  <tr>
+                    <td>{index}</td>
+                    <td>{tna.Teacher}</td>
+                    <td>{tna.Day}</td>
+                    <td>{tna.Hour}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <hr />
+            <h2>Actividad horario preferido </h2>
+            <Table size="sm" responsive bordered striped>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Actividad</th>
+                  <th>Día</th>
+                  <th>Hora</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activityPreferredHour.map((aph, index) => (
+                  <tr>
+                    <td>{index}</td>
+                    <td>{aph.Activity_Id}</td>
+                    <td>{aph.Preferred_Day}</td>
+                    <td>{aph.Preferred_Hour}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           </Tab>
         </Tabs>
       </Modal.Body>
+      <Modal.Footer>
+        <InputGroup>
+          <InputGroup.Prepend>
+            <InputGroup.Text>Nombre de la planificación</InputGroup.Text>
+          </InputGroup.Prepend>
+          <FormControl
+            value={newPlanName}
+            onChange={(e) => setNewPlanName(e.target.value)}
+          />
+          <InputGroup.Append>
+            <Button onClick={handleSave}>Guardar</Button>
+          </InputGroup.Append>
+        </InputGroup>
+      </Modal.Footer>
     </Modal>
   );
 };
